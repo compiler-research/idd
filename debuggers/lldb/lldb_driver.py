@@ -77,6 +77,22 @@ class LLDBDebugger(Driver):
 
         return ""
 
+    def get_state(self):
+        result = {}
+        base_state = {}
+        regression_state = {}
+
+        result['stack_frames'] = self.get_current_stack_frames()
+        result['locals'] = self.get_current_local_vars(None)
+        result['args'] = self.get_current_args()
+        result['instructions'] = self.get_current_instructions()
+        result['registers'] = self.get_current_registers()
+
+        base_state['stack_frame'] = result['stack_frames']['base']
+        regression_state['stack_frame'] = result['stack_frames']['regressed']
+
+        return { "base" : base_state, "regressed" : regression_state }
+
     def get_current_stack_frames(self):
         base_target = self.base_lldb_instance.GetTargetAtIndex(0)
         regression_target = self.regression_lldb_instance.GetTargetAtIndex(0)
