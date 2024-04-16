@@ -20,11 +20,6 @@ import argparse
 import sys
 import rich.box
 
-try:
-    from pyfiglet import Figlet
-except ImportError:
-    print("Please install pyfiglet to run this example")
-    raise
 class CustomHeader(Header):
     """Override the default Header for Styling"""
 
@@ -76,14 +71,6 @@ class DiffArea(Widget):
 
     value = Reactive("0")
     widget_title = "title"
-
-    # def render(self) -> RenderableType:
-        # """Build a Rich renderable to render the calculator display."""
-        # return Padding(
-        #     Align.left(FigletText(self.value), vertical="middle"),
-        #     (0, 1),
-        #     style="white on rgb(51,51,51)",
-        # )
 
     def render(self) -> RenderableType:
         return Panel(
