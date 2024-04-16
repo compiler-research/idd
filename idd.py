@@ -94,7 +94,7 @@ class DiffArea(Widget):
 
 class DiffDebug(App):
     current_index: Reactive[int] = Reactive(-1)
-    tab_index = ["command"]
+    tab_index = ["parallel_command_bar"]
     show_bar = Reactive(False)
 
     common_command_result: Union[Reactive[str], str] = Reactive("")
@@ -210,15 +210,15 @@ class DiffDebug(App):
 
     async def action_submit(self) -> None:
         formatted = f"""
-command: {self.command.value}
+command: {self.parallel_command_bar.value}
         """
 
-        if self.command.value == "":
+        if self.parallel_command_bar.value == "":
             return
 
-        result = Debugger.run_parallel_command(self.command.value)
+        result = Debugger.run_parallel_command(self.parallel_command_bar.value)
         await self.set_common_command_result(result)
-        self.command.value = ""
+        self.parallel_command_bar.value = ""
 
         await self.bar.update(
             Panel(formatted, title="Report", border_style="blue", box=rich.box.SQUARE)
@@ -239,12 +239,12 @@ command: {self.command.value}
     async def on_mount(self) -> None:
         """Make a simple grid arrangement."""
 
-        self.command = TextInput(
+        self.parallel_command_bar = TextInput(
             name="command",
             placeholder="Enter your command here...",
             title="Debugger Command",
         )
-        # self.command.on_change_handler_name = "handle_command_on_change"
+        # self.parallel_command_bar.on_change_handler_name = "handle_command_on_change"
 
         self.bar = Static(
             renderable=Panel(
@@ -257,7 +257,7 @@ command: {self.command.value}
         self.header = CustomHeader()
         await self.view.dock(self.header, edge="top")
         await self.view.dock(TDiffFooter(), edge="bottom")
-        await self.view.dock(self.command, edge="bottom", size=3)
+        await self.view.dock(self.parallel_command_bar, edge="bottom", size=3)
 
         self.diff_frames1 = DiffArea()
         self.diff_frames1.widget_title = "base stackframe"
