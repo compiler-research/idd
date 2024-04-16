@@ -84,13 +84,6 @@ class DiffDebug(App):
     tab_index = ["parallel_command_bar", "base_command_bar", "regressed_command_bar"]
     show_bar = Reactive(False)
 
-    common_command_result: Union[Reactive[str], str] = Reactive("")
-    pframes_command_result: Union[Reactive[str], str] = Reactive("")
-    plocals_command_result: Union[Reactive[str], str] = Reactive("")
-    pargs_command_result: Union[Reactive[str], str] = Reactive("")
-    pasm_command_result: Union[Reactive[str], str] = Reactive("")
-    pregisters_command_result: Union[Reactive[str], str] = Reactive("")
-
     debugger_command_input_box: None
     diff_driver = DiffDriver()
     base_args = ""
