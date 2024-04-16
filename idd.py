@@ -81,7 +81,7 @@ class DiffArea(Widget):
 
 class DiffDebug(App):
     current_index: Reactive[int] = Reactive(-1)
-    tab_index = ["parallel_command_bar", "base_command_bar", "regression_command_bar"]
+    tab_index = ["parallel_command_bar", "base_command_bar", "regressed_command_bar"]
     show_bar = Reactive(False)
 
     common_command_result: Union[Reactive[str], str] = Reactive("")
@@ -247,8 +247,8 @@ command: {self.parallel_command_bar.value}
             title="Base Debugger Command",
         )
 
-        self.regression_command_bar = TextInput(
-            name="regression_command_bar",
+        self.regressed_command_bar = TextInput(
+            name="regressed_command_bar",
             placeholder="Enter your regression command here...",
             title="Regression Debugger Command",
         )
@@ -371,7 +371,7 @@ command: {self.parallel_command_bar.value}
             rightmiddle4 = self.diff_reg2,
 
             left5 = self.base_command_bar,
-            right5 = self.regression_command_bar,
+            right5 = self.regressed_command_bar,
 
             left6 = self.diff_area1,
             right6 = self.diff_area2
