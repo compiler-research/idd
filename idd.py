@@ -322,7 +322,7 @@ command: {self.parallel_command_bar.value}
         grid.add_row("2", fraction=1, max_size=10)
         grid.add_row("3", fraction=1, max_size=10)
         grid.add_row("4", fraction=1, max_size=10)
-        grid.add_row("5", fraction=1, max_size=10)
+        grid.add_row("5", fraction=1, max_size=3)
         grid.add_row("6", fraction=1, min_size=20, max_size=30)
 
         grid.add_areas(
