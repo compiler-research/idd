@@ -200,16 +200,24 @@ class DiffDebug(App):
 command: {self.parallel_command_bar.value}
         """
 
-        if self.parallel_command_bar.value == "":
-            return
+        if self.parallel_command_bar.value != "":
+            result = Debugger.run_parallel_command(self.parallel_command_bar.value)
+            await self.set_common_command_result(result)
+            self.parallel_command_bar.value = ""
 
-        result = Debugger.run_parallel_command(self.parallel_command_bar.value)
-        await self.set_common_command_result(result)
-        self.parallel_command_bar.value = ""
+            await self.bar.update(
+                Panel(formatted, title="Report", border_style="blue", box=rich.box.SQUARE)
+            )
 
-        await self.bar.update(
-            Panel(formatted, title="Report", border_style="blue", box=rich.box.SQUARE)
-        )
+        if self.base_command_bar.value != "":
+            result = Debugger.run_single_command(self.base_command_bar.value, "base")
+            self.diff_area1.value = result
+            self.base_command_bar.value = ""
+
+        if self.regressed_command_bar.value != "":
+            result = Debugger.run_single_command(self.regressed_command_bar.value, "regressed")
+            self.diff_area2.value = result
+            self.regressed_command_bar.value = ""
 
     async def action_next_tab_index(self) -> None:
         """Changes the focus to the next form field"""
