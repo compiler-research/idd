@@ -72,6 +72,8 @@ class LLDBDebugger(Driver):
 
         if command_result.Succeeded():
             return [command_result.GetOutput()]
+        else:
+            return [command_result.GetError()]
 
         return ""
 
