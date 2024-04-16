@@ -81,7 +81,7 @@ class DiffArea(Widget):
 
 class DiffDebug(App):
     current_index: Reactive[int] = Reactive(-1)
-    tab_index = ["parallel_command_bar"]
+    tab_index = ["parallel_command_bar", "base_command_bar", "regression_command_bar"]
     show_bar = Reactive(False)
 
     common_command_result: Union[Reactive[str], str] = Reactive("")
@@ -233,6 +233,18 @@ command: {self.parallel_command_bar.value}
         )
         # self.parallel_command_bar.on_change_handler_name = "handle_command_on_change"
 
+        self.base_command_bar = TextInput(
+            name="base_command_bar",
+            placeholder="Enter your base command here...",
+            title="Base Debugger Command",
+        )
+
+        self.regression_command_bar = TextInput(
+            name="regression_command_bar",
+            placeholder="Enter your regression command here...",
+            title="Regression Debugger Command",
+        )
+
         self.bar = Static(
             renderable=Panel(
                 "", title="Report", border_style="blue", box=rich.box.SQUARE
@@ -302,30 +314,39 @@ command: {self.parallel_command_bar.value}
         grid.add_row("2", fraction=1, max_size=10)
         grid.add_row("3", fraction=1, max_size=10)
         grid.add_row("4", fraction=1, max_size=10)
-        grid.add_row("5", fraction=1, min_size=20, max_size=30)
+        grid.add_row("5", fraction=1, max_size=10)
+        grid.add_row("6", fraction=1, min_size=20, max_size=30)
 
         grid.add_areas(
+            left1="leftmost-start|leftmiddle-end,1",
+            right1="rightmiddle-start|rightmost-end,1",
+
             left2="leftmost-start|leftmiddle-end,2",
             right2="rightmiddle-start|rightmost-end,2",
 
             leftmost3="leftmost,3",
             leftmiddle3="leftmiddle,3",
+
             rightmiddle3="rightmiddle,3",
             rightmost3="rightmost,3",
 
             leftmost4 = "leftmost, 4",
             leftmiddle4 = "leftmiddle, 4",
+
             rightmiddle4 = "rightmiddle, 4",
             rightmost4 = "rightmost, 4",
 
             left5="leftmost-start|leftmiddle-end,5",
             right5="rightmiddle-start|rightmost-end,5",
 
-            left1="leftmost-start|leftmiddle-end,1",
-            right1="rightmiddle-start|rightmost-end,1"
+            left6="leftmost-start|leftmiddle-end,6",
+            right6="rightmiddle-start|rightmost-end,6"
         )
 
         grid.place(
+            left1 = self.executable_path1,
+            right1 = self.executable_path2,
+
             left2 = self.diff_frames1,
             right2 = self.diff_frames2,
 
@@ -341,11 +362,11 @@ command: {self.parallel_command_bar.value}
             rightmost4 = self.diff_reg1,
             rightmiddle4 = self.diff_reg2,
 
-            left5 = self.diff_area1,
-            right5 = self.diff_area2,
+            left5 = self.base_command_bar,
+            right5 = self.regression_command_bar,
 
-            left1 = self.executable_path1,
-            right1 = self.executable_path2
+            left6 = self.diff_area1,
+            right6 = self.diff_area2
         )
 
 if __name__ == "__main__":
