@@ -15,6 +15,19 @@ TODO
 
 TODO
 
+## Cite
+```bibtex
+@article{vassilev2020idd,
+  title={IDD--a platform enabling differential debugging},
+  author={Vassilev, Martin and Vassilev, Vassil and Penev, Alexander},
+  journal={Cybernetics and Information Technologies},
+  volume={20},
+  number={1},
+  pages={53--67},
+  year={2020}
+}
+```
+
 ## Issues
 
 1. Make panels scrollable
