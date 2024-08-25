@@ -1,7 +1,7 @@
 import os
 import json
 
-from pygdbmi.gdbcontroller import GdbController
+from debuggers.gdb.idd_gdb_controller import IDDGdbController
 from driver import Driver
 
 from debuggers.gdb.utils import parse_gdb_line
@@ -11,16 +11,14 @@ regressed_response = []
 
 class GDBMiDebugger(Driver):
     base_gdb_instance = None
-    base_gdbmi_instance = GdbController()
 
     regressed_gdb_instance = None
-    regressed_gdbmi_instance = GdbController()
 
     gdb_instances = None
 
     def __init__(self, base_args, regression_args):
-        self.base_gdb_instance = GdbController()
-        self.regressed_gdb_instance = GdbController()
+        self.base_gdb_instance = IDDGdbController()
+        self.regressed_gdb_instance = IDDGdbController()
 
         self.gdb_instances = { 'base': self.base_gdb_instance, 'regressed': self.regressed_gdb_instance }
 
