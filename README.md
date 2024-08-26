@@ -24,6 +24,8 @@ $ apt-get install ...
 If it's open-source, talk about the community here, ask social media links and other links.
 ![Discord Banner 4](https://discord.com/api/guilds/1235591463472074929/widget.png?style=banner4)
 
+<iframe src="https://discord.com/widget?id=1056199804956463156&theme=dark" width="350" height="500" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
+
  ###  :fire: Contribution
 
  Your contributions are always welcome and appreciated. Following are the things you can do to contribute to this project.
