@@ -23,7 +23,7 @@ $ apt-get install ...
 
 Join our discord for discussions and collaboration.
 
-<a href="https://discord.gg/Vkv3ne4zVK"><img src="images/discord.svg" /></a>
+<a target="_blank" href="https://discord.gg/Vkv3ne4zVK"><img src="images/discord.svg" /></a>
 
 
  ###  :fire: Contribution
