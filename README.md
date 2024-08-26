@@ -22,6 +22,7 @@ $ apt-get install ...
 ## :cherry_blossom: Community
 
 If it's open-source, talk about the community here, ask social media links and other links.
+![Discord Banner 4](https://discord.com/api/guilds/[SERVER ID]/widget.png?style=banner4)
 
  ###  :fire: Contribution
 
