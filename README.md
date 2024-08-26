@@ -1,3 +1,5 @@
+# Introduction
+
 IDD is a tool for performing interactive dynamic differential debugging capable to identify functional and performance regressions.
 
 ##  :beginner: About
