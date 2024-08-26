@@ -23,6 +23,9 @@ $ apt-get install ...
 
 If it's open-source, talk about the community here, ask social media links and other links.
 ![Discord Banner 4](https://discord.com/api/guilds/1235591463472074929/widget.png?style=banner4)
+![Discord Banner 4](https://discord.com/api/guilds/1056199804956463156/widget.png?style=banner4)
+![My Discord](https://discord-readme-badge.vercel.app/api?id=1235591463472074929)
+![My Discord](https://discord-readme-badge.vercel.app/api?id=1056199804956463156)
 
 <iframe src="https://discord.com/widget?id=1056199804956463156&theme=dark" width="350" height="500" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
 
