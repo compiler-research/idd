@@ -8,15 +8,21 @@ IDD loads two versions of the same application. The first one is the base versio
 
 ## :zap: Usage
 Write about how to use this project.
-`idd.py ...`
+`python3 idd.py -c gdb -ba <path to base executable> -ra <path to regressed executable>`
 
 ###  :electric_plug: Installation
 - Steps on how to install this project, to use it.
-- Be very detailed here, For example, if you have tools which run on different operating systems, write installation steps for all of them.
 
+-- Creating new environment:
 ```
-$ add installations steps if you have to.
-$ apt-get install ...
+$ python3 -m venv iddenv
+$ source iddenv/bin/activate
+```
+
+
+-- Installing required packages:
+```
+$ pip3 install textual textual_inputs pygdbmi
 ```
 
 ## :cherry_blossom: Community
