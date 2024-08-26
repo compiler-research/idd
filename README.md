@@ -6,12 +6,15 @@ IDD is a tool for performing interactive dynamic differential debugging capable 
 
 IDD loads two versions of the same application. The first one is the base version that works as expected while the second version of the same program has a regression introduced. IDD inspects the two versions of the applications using external tools like gdb and lldb. The two applications are executed side by side and the user is allowed to dispatch commands to the underlying debuggers in order to expect their internal states and isolate the origin of the regression.
 
+## Demo
+![idd](https://github.com/compiler-research/idd/assets/7579600/dac1b3c6-44f0-48b2-a19d-92eb5f1d973f)
+
 ## :zap: Usage
 Write about how to use this project.
 
 `python3 idd.py -c gdb -ba <path to base executable> -ra <path to regressed executable>`
 
-###  :electric_plug: Installation
+### :electric_plug: Installation
 - Steps on how to install this project on Ubuntu 22.04
 
 -- Creating new environment:
@@ -47,8 +50,20 @@ Join our discord for discussions and collaboration.
  3. **Create a pull request** <br>
  It can't get better then this, your pull request will be appreciated by the community. You can get started by picking up any open issues from [here]() and make a pull request.
 
+## Cite
+```bibtex
+@article{vassilev2020idd,
+  title={IDD--a platform enabling differential debugging},
+  author={Vassilev, Martin and Vassilev, Vassil and Penev, Alexander},
+  journal={Cybernetics and Information Technologies},
+  volume={20},
+  number={1},
+  pages={53--67},
+  year={2020}
+}
+```
+
 ## Issues
 
-1. ~~Support entering commands to a specific analyzer.~~
 2. Make panels scrollable
 3. Make panels configurable

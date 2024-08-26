@@ -87,7 +87,7 @@ class PrintState (gdb.Command):
         registers.append(str(e))
 
     result['locals'] = locals
-    result['args'] = locals
+    result['args'] = args
     result['instructions'] = instructions
     result['registers'] = registers
 
