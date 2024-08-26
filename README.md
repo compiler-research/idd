@@ -21,19 +21,9 @@ $ apt-get install ...
 
 ## :cherry_blossom: Community
 
-<a href="https://discord.gg/Vkv3ne4zVK">Join our discord for more updates <img src="images/discord.svg" /></a></h3>
+Join our discord for discussions and collaboration. 
+<a href="https://discord.gg/Vkv3ne4zVK"><img src="images/discord.svg" /></a>
 
-![Discord Banner 4](https://discord.com/api/guilds/1235591463472074929/widget.png?style=banner4)
-![Discord Banner 4](https://discord.com/api/guilds/1056199804956463156/widget.png?style=banner4)
-![My Discord](https://discord-readme-badge.vercel.app/api?id=1235591463472074929)
-![My Discord](https://discord-readme-badge.vercel.app/api?id=1056199804956463156)
-
-[![My Discord (YOURUSERID)](https://img.shields.io/badge/My-Discord-%235865F2.svg)](https://discord.com/invite/Vkv3ne4zVK)
-
-![Discord Shield](https://discordapp.com/api/guilds/1056199804956463156/widget.png?style=shield)
-
-
-<iframe src="https://discord.com/widget?id=1056199804956463156&theme=dark" width="350" height="500" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
 
  ###  :fire: Contribution
 
