@@ -21,7 +21,8 @@ $ apt-get install ...
 
 ## :cherry_blossom: Community
 
-Join our discord for discussions and collaboration. 
+Join our discord for discussions and collaboration.
+
 <a href="https://discord.gg/Vkv3ne4zVK"><img src="images/discord.svg" /></a>
 
 
