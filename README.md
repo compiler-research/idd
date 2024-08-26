@@ -11,7 +11,7 @@ Write about how to use this project.
 `python3 idd.py -c gdb -ba <path to base executable> -ra <path to regressed executable>`
 
 ###  :electric_plug: Installation
-- Steps on how to install this project, to use it.
+- Steps on how to install this project on Ubuntu 22.04
 
 -- Creating new environment:
 ```
