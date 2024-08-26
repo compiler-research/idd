@@ -27,7 +27,10 @@ If it's open-source, talk about the community here, ask social media links and o
 ![My Discord](https://discord-readme-badge.vercel.app/api?id=1235591463472074929)
 ![My Discord](https://discord-readme-badge.vercel.app/api?id=1056199804956463156)
 
-[![My Discord (YOURUSERID)](https://img.shields.io/badge/My-Discord-%235865F2.svg)](https://discord.com/users/mvassilev)
+[![My Discord (YOURUSERID)](https://img.shields.io/badge/My-Discord-%235865F2.svg)](https://discord.com/invite/Vkv3ne4zVK)
+
+![Discord Shield](https://discordapp.com/api/guilds/1056199804956463156/widget.png?style=shield)
+
 
 <iframe src="https://discord.com/widget?id=1056199804956463156&theme=dark" width="350" height="500" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
 
