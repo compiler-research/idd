@@ -39,8 +39,6 @@ If it's open-source, talk about the community here, ask social media links and o
 
  > If you are new to open-source, make sure to check read more about it [here](https://www.digitalocean.com/community/tutorial_series/an-introduction-to-open-source) and learn more about creating a pull request [here](https://www.digitalocean.com/community/tutorials/how-to-create-a-pull-request-on-github).
 
-## How to use IDD
-
 ## Issues
 
 1. Make panels scrollable
