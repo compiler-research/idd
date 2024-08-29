@@ -18,7 +18,7 @@ class Header(Header):
         header_table.add_column("title", justify="center", ratio=1)
         header_table.add_column("clock", justify="right", width=8)
         header_table.add_row(
-            "IDD", self.full_title, self.get_clock() if self.clock else ""
+            "IDD"
         )
         return header_table
 

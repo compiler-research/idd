@@ -1,15 +1,19 @@
-from textual import events
-from textual.app import App
-from textual_inputs import TextInput
+#https://stackoverflow.com/questions/59591466/how-to-import-lldb-module-for-python-on-mac
+#https://stackoverflow.com/questions/46012328/import-lldb-in-python-3-on-mac
+    
+from textual.app import App, ComposeResult
+from textual.widgets import Input
 from textual.reactive import Reactive
 from textual.widgets import Static
 from rich.panel import Panel
+from textual.containers import Grid, Container
+
 
 from diff_driver import DiffDriver
 
 from ui.header import Header
 from ui.footer import Footer
-from ui.scrollable_area import ScrollableArea
+from ui.scrollable_area import ScrollableArea, CheckerBoard
 from ui.diff_area import DiffArea
 
 import argparse
@@ -17,6 +21,8 @@ import sys
 import rich.box
 
 class DiffDebug(App):
+    CSS_PATH = "grid_layout5_col_span.tcss"
+
     current_index: Reactive[int] = Reactive(-1)
     tab_index = ["parallel_command_bar", "base_command_bar", "regressed_command_bar"]
     show_bar = Reactive(False)
@@ -25,6 +31,9 @@ class DiffDebug(App):
     diff_driver = DiffDriver()
     base_args = ""
     regression_args = ""
+
+    diff_area1 = ScrollableArea("This is a long block of text that exceeds the vertical space available in the window. " * 10, 100)
+    #diff_area1 = CheckerBoard(100)
 
     async def set_common_command_result(self, command_result) -> None:
         if command_result:
@@ -46,12 +55,12 @@ class DiffDebug(App):
     async def compare_contents(self, raw_base_contents, raw_regression_contents):
         if raw_base_contents != '' and raw_regression_contents != '':
             diff1 = self.diff_driver.get_diff(raw_base_contents, raw_regression_contents, "base")
-            #await self.diff_area1.set_text(diff1)
-            self.diff_area1.value = diff1
+            s_diff1 = '\n'.join(diff1)
+            await self.diff_area1.append_text(s_diff1)
 
             diff2 = self.diff_driver.get_diff(raw_regression_contents, raw_base_contents, "regressed")
-            #await self.diff_area2.set_text(diff2)
-            self.diff_area2.value = diff2
+            s_diff2 = '\n'.join(diff2)
+            await self.diff_area2.append_text(s_diff2)
 
     async def set_pframes_command_result(self, state) -> None:
         if state["base"] == None or "stack_frames" not in state["base"] or state["regressed"] == None or "stack_frames" not in state["regressed"]:
@@ -106,12 +115,12 @@ class DiffDebug(App):
         self.diff_reg2.value = self.diff_driver.get_diff(regressed_file_contents, base_file_contents, "regressed")
 
     async def on_load(self) -> None:
-        await self.bind("q", "quit", "Quit")
-        await self.bind("b", "toggle_sidebar", "Toggle sidebar")
-        await self.bind("escape", "reset_focus", show=False)
-        await self.bind("enter", "submit", "Submit")
-        await self.bind("ctrl+i", "next_tab_index", show=False)
-        await self.bind("shift+tab", "previous_tab_index", show=False)
+        self.bind("q", "quit", description="Quit")
+        self.bind("b", "toggle_sidebar", description="Toggle sidebar")
+        self.bind("escape", "reset_focus")
+        self.bind("enter", "submit", description="Submit")
+        self.bind("ctrl+i", "next_tab_index")
+        self.bind("shift+tab", "previous_tab_index")
 
     def watch_show_bar(self, show_bar: bool) -> None:
         """Called when show_bar changes."""
@@ -123,7 +132,11 @@ class DiffDebug(App):
 
     def action_toggle_sidebar(self) -> None:
         """Called when user hits 'b' key."""
-        self.show_bar = not self.show_bar
+        #self.show_bar = not self.show_bar
+        #self.diff_area1.page_down()
+        #self.diff_area1.target_y += self.diff_area1.max_scroll_y
+        self.diff_area1.scroll_to(y = self.diff_area1.max_scroll_y)
+        #self.diff_area1.window.scroll_y = self.diff_area1.virtual_size.height - self.diff_area1.size.height
 
     async def action_submit(self) -> None:
         formatted = f"""
@@ -159,153 +172,63 @@ command: {self.parallel_command_bar.value}
         """Changes the focus to the previous form field"""
         if self.current_index > 0:
             self.current_index -= 1
-            await getattr(self, self.tab_index[self.current_index]).focus()    
+            await getattr(self, self.tab_index[self.current_index]).focus()
 
-    async def on_mount(self) -> None:
-        """Make a simple grid arrangement."""
+    def compose(self) -> ComposeResult:
+        """Compose the layout of the application."""
+        
+        # Command input bars
+        parallel_command_bar = Input(placeholder="Enter your command here...", name="command")
+        base_command_bar = Input(placeholder="Enter your base command here...", name="base_command_bar")
+        regressed_command_bar = Input(placeholder="Enter your regression command here...", name="regressed_command_bar")
 
-        self.parallel_command_bar = TextInput(
-            name="command",
-            placeholder="Enter your command here...",
-            title="Debugger Command",
-        )
-        # self.parallel_command_bar.on_change_handler_name = "handle_command_on_change"
+        # Diff areas
+        diff_frames1 = DiffArea(title="base stackframe")
+        yield diff_frames1
+        
+        diff_frames2 = DiffArea(title="regression stackframe")
+        yield diff_frames2
 
-        self.base_command_bar = TextInput(
-            name="base_command_bar",
-            placeholder="Enter your base command here...",
-            title="Base Debugger Command",
-        )
+        diff_locals1 = DiffArea(title="base locals")
+        yield diff_locals1
+        
+        diff_locals2 = DiffArea(title="regression locals")
+        yield diff_locals2
 
-        self.regressed_command_bar = TextInput(
-            name="regressed_command_bar",
-            placeholder="Enter your regression command here...",
-            title="Regression Debugger Command",
-        )
+        diff_args1 = DiffArea(title="base args")
+        yield diff_args1
+        
+        diff_args2 = DiffArea(title="regression args")
+        yield diff_args2
+        
+        diff_asm1 = DiffArea(title="base asm")
+        yield diff_asm1
+        
+        diff_asm2 = DiffArea(title="regression asm")
+        yield diff_asm2 
 
-        self.bar = Static(
-            renderable=Panel(
-                "", title="Report", border_style="blue", box=rich.box.SQUARE
-            )
-        )
-        self.bar.layout_offset_x = -40
-        await self.view.dock(self.bar, edge="left", size=40, z=1)
+        diff_reg1 = DiffArea(title="base registers")
+        yield diff_reg1
+        
+        diff_reg2 = DiffArea(title="regression registers")
+        yield diff_reg2
+        
+        
+        yield self.diff_area1
+        
+        diff_area2 = ScrollableArea("")
+        yield diff_area2
+        
+        executable_path1 = DiffArea(title="base executable and arguments", value="")
+        yield executable_path1
 
-        self.header = Header()
-        await self.view.dock(self.header, edge="top")
-        await self.view.dock(Footer(), edge="bottom")
-        await self.view.dock(self.parallel_command_bar, edge="bottom", size=3)
-
-        self.diff_frames1 = DiffArea()
-        self.diff_frames1.widget_title = "base stackframe"
-
-        self.diff_frames2 = DiffArea()
-        self.diff_frames2.widget_title = "regression stackframe"
-
-        self.diff_locals1 = DiffArea()
-        self.diff_locals1.widget_title = "base locals"
-
-        self.diff_locals2 = DiffArea()
-        self.diff_locals2.widget_title = "regression locals"
-
-        self.diff_args1 = DiffArea()
-        self.diff_args1.widget_title = "base args"
-
-        self.diff_args2 = DiffArea()
-        self.diff_args2.widget_title = "regression args"
-
-        #self.diff_asm1 = ScrollWindow()
-        self.diff_asm1 = DiffArea()
-        self.diff_asm1.widget_title = "base asm"
-
-        #self.diff_asm2 = ScrollWindow()
-        self.diff_asm2 = DiffArea()
-        self.diff_asm2.widget_title = "regression asm"
-
-        self.diff_reg1 = DiffArea()
-        self.diff_reg1.widget_title = "base registers"
-
-        self.diff_reg2 = DiffArea()
-        self.diff_reg2.widget_title = "regression registers"
-
-        self.diff_area1 = DiffArea()
-        #self.diff_area1.set_text("base")
-        #self.diff_area1.widget_title = "base"
-        self.diff_area2 = DiffArea()
-        #self.diff_area2.widget_title = "regression"
-
-        self.executable_path1 = DiffArea()
-        self.executable_path1.widget_title = "base executable and arguments"
-        self.executable_path1.value = args['base_args']
-
-        self.executable_path2 = DiffArea()
-        self.executable_path2.widget_title = "regression executable and arguments"
-        self.executable_path2.value = args['regression_args']
-
-        grid = await self.view.dock_grid()
-        grid.add_column("leftmost", fraction=1, min_size=20)
-        grid.add_column("leftmiddle", fraction=1, min_size=20)
-        grid.add_column("rightmiddle", fraction=1, min_size=20)
-        grid.add_column("rightmost", fraction=1, min_size=20)
-
-        grid.add_row("1", fraction=1, max_size=10)
-        grid.add_row("2", fraction=1, max_size=10)
-        grid.add_row("3", fraction=1, max_size=10)
-        grid.add_row("4", fraction=1, max_size=10)
-        grid.add_row("5", fraction=1, max_size=3)
-        grid.add_row("6", fraction=1, min_size=20, max_size=30)
-
-        grid.add_areas(
-            left1="leftmost-start|leftmiddle-end,1",
-            right1="rightmiddle-start|rightmost-end,1",
-
-            left2="leftmost-start|leftmiddle-end,2",
-            right2="rightmiddle-start|rightmost-end,2",
-
-            leftmost3="leftmost,3",
-            leftmiddle3="leftmiddle,3",
-
-            rightmiddle3="rightmiddle,3",
-            rightmost3="rightmost,3",
-
-            leftmost4 = "leftmost, 4",
-            leftmiddle4 = "leftmiddle, 4",
-
-            rightmiddle4 = "rightmiddle, 4",
-            rightmost4 = "rightmost, 4",
-
-            left5="leftmost-start|leftmiddle-end,5",
-            right5="rightmiddle-start|rightmost-end,5",
-
-            left6="leftmost-start|leftmiddle-end,6",
-            right6="rightmiddle-start|rightmost-end,6"
-        )
-
-        grid.place(
-            left1 = self.executable_path1,
-            right1 = self.executable_path2,
-
-            left2 = self.diff_frames1,
-            right2 = self.diff_frames2,
-
-            leftmost3 = self.diff_locals1,
-            leftmiddle3 = self.diff_locals2,
-
-            rightmiddle3 = self.diff_args1,
-            rightmost3 = self.diff_args2,
-
-            leftmost4 = self.diff_asm1,
-            leftmiddle4 = self.diff_asm2,
-
-            rightmost4 = self.diff_reg1,
-            rightmiddle4 = self.diff_reg2,
-
-            left5 = self.base_command_bar,
-            right5 = self.regressed_command_bar,
-
-            left6 = self.diff_area1,
-            right6 = self.diff_area2
-        )
+        executable_path2 = DiffArea(title="regression executable and arguments", value="")
+        yield executable_path2
+        
+        # Compose the view
+        yield Header()
+        yield parallel_command_bar
+        yield Footer()
 
 if __name__ == "__main__":
     Debugger = None
