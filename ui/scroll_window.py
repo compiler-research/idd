@@ -1,4 +1,3 @@
-from rich.text import Text
 from textual.widgets import ScrollView
 
 class ScrollWindow(ScrollView):
