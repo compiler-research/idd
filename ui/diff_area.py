@@ -13,10 +13,13 @@ class DiffArea(Widget):
     value = Reactive("0")
     widget_title = "title"
 
-    def __init__(self, title ="title", value = "val"):
+    def __init__(self, title ="title", value = "val", component_id: str = None):
         super().__init__()
         self.widget_title = title
         self.value = value
+
+        if component_id:
+            self.id = component_id
 
     def render(self) -> RenderableType:
         return Panel(

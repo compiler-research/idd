@@ -1,27 +1,27 @@
 #https://stackoverflow.com/questions/59591466/how-to-import-lldb-module-for-python-on-mac
 #https://stackoverflow.com/questions/46012328/import-lldb-in-python-3-on-mac
-    
+
+from textual import on
 from textual.app import App, ComposeResult
 from textual.widgets import Input
 from textual.reactive import Reactive
 from textual.widgets import Static
 from rich.panel import Panel
 from textual.containers import Grid, Container
-
+from textual import events
 
 from diff_driver import DiffDriver
 
 from ui.header import Header
 from ui.footer import Footer
-from ui.scrollable_area import ScrollableArea, CheckerBoard
+from ui.scrollable_area import TextScrollView
 from ui.diff_area import DiffArea
 
 import argparse
 import sys
-import rich.box
 
 class DiffDebug(App):
-    CSS_PATH = "grid_layout5_col_span.tcss"
+    CSS_PATH = "layout.tcss"
 
     current_index: Reactive[int] = Reactive(-1)
     tab_index = ["parallel_command_bar", "base_command_bar", "regressed_command_bar"]
@@ -32,8 +32,25 @@ class DiffDebug(App):
     base_args = ""
     regression_args = ""
 
-    diff_area1 = ScrollableArea("This is a long block of text that exceeds the vertical space available in the window. " * 10, 100)
-    #diff_area1 = CheckerBoard(100)
+    diff_area1 = TextScrollView(component_id = "diff-area1")
+    diff_area2 = TextScrollView(component_id = "diff-area2")
+    diff_frames1 = DiffArea(title="base stackframe", component_id = "diff-frames1")
+    diff_frames2 = DiffArea(title="regression stackframe", component_id = "diff-frames2")
+    diff_locals1 = DiffArea(title="base locals", component_id = "diff-locals1")
+    diff_locals2 = DiffArea(title="regression locals", component_id = "diff-locals2")
+    diff_args1 = DiffArea(title="base args", component_id = "diff-args1")
+    diff_args2 = DiffArea(title="regression args", component_id = "diff-args2")
+    diff_asm1 = DiffArea(title="base asm", component_id = "diff-asm1")
+    diff_asm2 = DiffArea(title="regression asm", component_id = "diff-asm2")
+    diff_reg1 = DiffArea(title="base registers", component_id = "diff-reg1")
+    diff_reg2 = DiffArea(title="regression registers", component_id = "diff-reg2")
+    #executable_path1 = DiffArea(title="base executable and arguments", value="")
+    #executable_path2 = DiffArea(title="regression executable and arguments", value="")
+
+    # Command input bars
+    parallel_command_bar = Input(placeholder="Enter your command here...", name="command", id="parallel-command-bar")
+    base_command_bar = Input(placeholder="Enter your base command here...", name="base_command_bar", id="base-command-bar")
+    regressed_command_bar = Input(placeholder="Enter your regression command here...", name="regressed_command_bar", id="regressed-command-bar")
 
     async def set_common_command_result(self, command_result) -> None:
         if command_result:
@@ -44,23 +61,21 @@ class DiffDebug(App):
 
             state = Debugger.get_state()
 
-            await self.set_pframes_command_result(state)
-            await self.set_pargs_command_result(state)
-            await self.set_plocals_command_result(state)
-            await self.set_pasm_command_result(state)
-            await self.set_pregisters_command_result(state)
+            #await self.set_pframes_command_result(state)
+            #await self.set_pargs_command_result(state)
+            #await self.set_plocals_command_result(state)
+            #await self.set_pasm_command_result(state)
+            #await self.set_pregisters_command_result(state)
 
             #calls = Debugger.get_current_calls()
 
     async def compare_contents(self, raw_base_contents, raw_regression_contents):
         if raw_base_contents != '' and raw_regression_contents != '':
             diff1 = self.diff_driver.get_diff(raw_base_contents, raw_regression_contents, "base")
-            s_diff1 = '\n'.join(diff1)
-            await self.diff_area1.append_text(s_diff1)
+            self.diff_area1.append(diff1)
 
             diff2 = self.diff_driver.get_diff(raw_regression_contents, raw_base_contents, "regressed")
-            s_diff2 = '\n'.join(diff2)
-            await self.diff_area2.append_text(s_diff2)
+            self.diff_area2.append(diff2)
 
     async def set_pframes_command_result(self, state) -> None:
         if state["base"] == None or "stack_frames" not in state["base"] or state["regressed"] == None or "stack_frames" not in state["regressed"]:
@@ -135,7 +150,7 @@ class DiffDebug(App):
         #self.show_bar = not self.show_bar
         #self.diff_area1.page_down()
         #self.diff_area1.target_y += self.diff_area1.max_scroll_y
-        self.diff_area1.scroll_to(y = self.diff_area1.max_scroll_y)
+        #self.diff_area1.scroll_to(y = self.diff_area1.max_scroll_y)
         #self.diff_area1.window.scroll_y = self.diff_area1.virtual_size.height - self.diff_area1.size.height
 
     async def action_submit(self) -> None:
@@ -148,9 +163,9 @@ command: {self.parallel_command_bar.value}
             await self.set_common_command_result(result)
             self.parallel_command_bar.value = ""
 
-            await self.bar.update(
-                Panel(formatted, title="Report", border_style="blue", box=rich.box.SQUARE)
-            )
+            #await self.bar.update(
+            #    Panel(formatted, title="Report", border_style="blue", box=rich.box.SQUARE)
+            #)
 
         if self.base_command_bar.value != "":
             result = Debugger.run_single_command(self.base_command_bar.value, "base")
@@ -174,61 +189,69 @@ command: {self.parallel_command_bar.value}
             self.current_index -= 1
             await getattr(self, self.tab_index[self.current_index]).focus()
 
+
     def compose(self) -> ComposeResult:
         """Compose the layout of the application."""
-        
-        # Command input bars
-        parallel_command_bar = Input(placeholder="Enter your command here...", name="command")
-        base_command_bar = Input(placeholder="Enter your base command here...", name="base_command_bar")
-        regressed_command_bar = Input(placeholder="Enter your regression command here...", name="regressed_command_bar")
+
+        yield Header()
 
         # Diff areas
-        diff_frames1 = DiffArea(title="base stackframe")
-        yield diff_frames1
+        yield self.diff_frames1
+        yield self.diff_frames2
         
-        diff_frames2 = DiffArea(title="regression stackframe")
-        yield diff_frames2
+        yield self.diff_locals1
+        yield self.diff_locals2
+ 
+        yield self.diff_args1
+        yield self.diff_args2
+        
+        yield self.diff_asm1
+        yield self.diff_asm2 
 
-        diff_locals1 = DiffArea(title="base locals")
-        yield diff_locals1
+        yield self.diff_reg1
+        yield self.diff_reg2
         
-        diff_locals2 = DiffArea(title="regression locals")
-        yield diff_locals2
-
-        diff_args1 = DiffArea(title="base args")
-        yield diff_args1
-        
-        diff_args2 = DiffArea(title="regression args")
-        yield diff_args2
-        
-        diff_asm1 = DiffArea(title="base asm")
-        yield diff_asm1
-        
-        diff_asm2 = DiffArea(title="regression asm")
-        yield diff_asm2 
-
-        diff_reg1 = DiffArea(title="base registers")
-        yield diff_reg1
-        
-        diff_reg2 = DiffArea(title="regression registers")
-        yield diff_reg2
-        
-        
-        yield self.diff_area1
-        
-        diff_area2 = ScrollableArea("")
-        yield diff_area2
-        
-        executable_path1 = DiffArea(title="base executable and arguments", value="")
-        yield executable_path1
-
-        executable_path2 = DiffArea(title="regression executable and arguments", value="")
-        yield executable_path2
+        #yield self.executable_path1
+        #yield self.executable_path2
         
         # Compose the view
-        yield Header()
-        yield parallel_command_bar
+        yield self.base_command_bar
+        yield self.regressed_command_bar
+
+        yield self.diff_area1
+        yield self.diff_area2
+
+        yield self.parallel_command_bar
+
         yield Footer()
+
+    @on(Input.Submitted)
+    async def execute_debugger_command(self, event: Input.Changed) -> None:
+        # Updating the UI to show the reasons why validation failed
+        if event.control.id == 'parallel-command-bar':
+            formatted = f"""
+command: {self.parallel_command_bar.value}
+        """
+
+        if self.parallel_command_bar.value != "":
+            result = Debugger.run_parallel_command(self.parallel_command_bar.value)
+            await self.set_common_command_result(result)
+            self.parallel_command_bar.value = ""
+
+            #await self.bar.update(
+            #    Panel(formatted, title="Report", border_style="blue", box=rich.box.SQUARE)
+            #)
+
+        if self.base_command_bar.value != "":
+            result = Debugger.run_single_command(self.base_command_bar.value, "base")
+            self.diff_area1.value = result
+            self.base_command_bar.value = ""
+
+        if self.regressed_command_bar.value != "":
+            result = Debugger.run_single_command(self.regressed_command_bar.value, "regressed")
+            self.diff_area2.value = result
+            self.regressed_command_bar.value = ""
+        a = event
 
 if __name__ == "__main__":
     Debugger = None
