@@ -32,18 +32,18 @@ class DiffDebug(App):
     base_args = ""
     regression_args = ""
 
-    diff_area1 = TextScrollView(component_id = "diff-area1")
-    diff_area2 = TextScrollView(component_id = "diff-area2")
-    diff_frames1 = DiffArea(title="base stackframe", component_id = "diff-frames1")
-    diff_frames2 = DiffArea(title="regression stackframe", component_id = "diff-frames2")
-    diff_locals1 = DiffArea(title="base locals", component_id = "diff-locals1")
-    diff_locals2 = DiffArea(title="regression locals", component_id = "diff-locals2")
-    diff_args1 = DiffArea(title="base args", component_id = "diff-args1")
-    diff_args2 = DiffArea(title="regression args", component_id = "diff-args2")
-    diff_asm1 = DiffArea(title="base asm", component_id = "diff-asm1")
-    diff_asm2 = DiffArea(title="regression asm", component_id = "diff-asm2")
-    diff_reg1 = DiffArea(title="base registers", component_id = "diff-reg1")
-    diff_reg2 = DiffArea(title="regression registers", component_id = "diff-reg2")
+    diff_area1 = TextScrollView(title="Base Diff", component_id="diff-area1")
+    diff_area2 = TextScrollView(title="Regression Diff", component_id = "diff-area2")
+    diff_frames1 = TextScrollView(title="Base Stackframe", component_id = "diff-frames1")
+    diff_frames2 = TextScrollView(title="Regression Stackframe", component_id = "diff-frames2")
+    diff_locals1 = TextScrollView(title="Base Locals", component_id = "diff-locals1")
+    diff_locals2 = TextScrollView(title="Regression Locals", component_id = "diff-locals2")
+    diff_args1 = TextScrollView(title="Base Args", component_id = "diff-args1")
+    diff_args2 = TextScrollView(title="Regression Args", component_id = "diff-args2")
+    diff_asm1 = TextScrollView(title="Base Asm", component_id = "diff-asm1")
+    diff_asm2 = TextScrollView(title="Regression Asm", component_id = "diff-asm2")
+    diff_reg1 = TextScrollView(title="Base Registers", component_id = "diff-reg1")
+    diff_reg2 = TextScrollView(title="Regression Registers", component_id = "diff-reg2")
     #executable_path1 = DiffArea(title="base executable and arguments", value="")
     #executable_path2 = DiffArea(title="regression executable and arguments", value="")
 
@@ -61,11 +61,11 @@ class DiffDebug(App):
 
             state = Debugger.get_state()
 
-            #await self.set_pframes_command_result(state)
-            #await self.set_pargs_command_result(state)
-            #await self.set_plocals_command_result(state)
-            #await self.set_pasm_command_result(state)
-            #await self.set_pregisters_command_result(state)
+            await self.set_pframes_command_result(state)
+            await self.set_pargs_command_result(state)
+            await self.set_plocals_command_result(state)
+            await self.set_pasm_command_result(state)
+            await self.set_pregisters_command_result(state)
 
             #calls = Debugger.get_current_calls()
 
@@ -84,8 +84,11 @@ class DiffDebug(App):
         base_file_contents = state["base"]["stack_frames"]
         regressed_file_contents = state["regressed"]["stack_frames"]
 
-        self.diff_frames1.value = self.diff_driver.get_diff(base_file_contents, regressed_file_contents, "base")
-        self.diff_frames2.value = self.diff_driver.get_diff(regressed_file_contents, base_file_contents, "regressed")
+        diff1 = self.diff_driver.get_diff(base_file_contents, regressed_file_contents, "base")
+        self.diff_frames1.text(diff1)
+
+        diff2 = self.diff_driver.get_diff(regressed_file_contents, base_file_contents, "regressed")
+        self.diff_frames2.text(diff2)
 
     async def set_plocals_command_result(self, state) -> None:
         if state["base"] == None or "locals" not in state["base"] or state["regressed"] == None or "locals" not in state["regressed"]:
@@ -94,8 +97,11 @@ class DiffDebug(App):
         base_file_contents = state["base"]["locals"]
         regressed_file_contents = state["regressed"]["locals"]
 
-        self.diff_locals1.value = self.diff_driver.get_diff(base_file_contents, regressed_file_contents, "base")
-        self.diff_locals2.value = self.diff_driver.get_diff(regressed_file_contents, base_file_contents, "regressed")
+        diff1 = self.diff_driver.get_diff(base_file_contents, regressed_file_contents, "base")
+        self.diff_locals1.text(diff1)
+
+        diff2 = self.diff_driver.get_diff(regressed_file_contents, base_file_contents, "regressed")
+        self.diff_locals2.text(diff2)
 
     async def set_pargs_command_result(self, state) -> None:
         if state["base"] == None or "args" not in state["base"] or state["regressed"] == None or "args" not in state["regressed"]:
@@ -104,8 +110,11 @@ class DiffDebug(App):
         base_file_contents = state["base"]["args"]
         regressed_file_contents = state["regressed"]["args"]
 
-        self.diff_args1.value = self.diff_driver.get_diff(base_file_contents, regressed_file_contents, "base")
-        self.diff_args2.value = self.diff_driver.get_diff(regressed_file_contents, base_file_contents, "regressed")
+        diff1 = self.diff_driver.get_diff(base_file_contents, regressed_file_contents, "base")
+        self.diff_args1.text(diff1)
+
+        diff2 = self.diff_driver.get_diff(regressed_file_contents, base_file_contents, "regressed")
+        self.diff_args2.text(diff2)
 
     async def set_pasm_command_result(self, state) -> None:
         if state["base"] == None or "instructions" not in state["base"] or state["regressed"] == None or "instructions" not in state["regressed"]:
@@ -114,10 +123,11 @@ class DiffDebug(App):
         base_file_contents = state["base"]["instructions"]
         regressed_file_contents = state["regressed"]["instructions"]
 
-        #await self.diff_asm1.set_text(self.diff_driver.get_diff(base_file_contents, regressed_file_contents, "base"), False)
-        self.diff_asm1.value = self.diff_driver.get_diff(base_file_contents, regressed_file_contents, "base")
-        #await self.diff_asm2.set_text(self.diff_driver.get_diff(regressed_file_contents, base_file_contents, "regressed"), False)
-        self.diff_asm2.value = self.diff_driver.get_diff(regressed_file_contents, base_file_contents, "regressed")
+        diff1 = self.diff_driver.get_diff(base_file_contents, regressed_file_contents, "base")
+        self.diff_asm1.text(diff1)
+
+        diff2 = self.diff_driver.get_diff(regressed_file_contents, base_file_contents, "regressed")
+        self.diff_asm2.text(diff2)
 
     async def set_pregisters_command_result(self, state) -> None:
         if state["base"] == None or "registers" not in state["base"] or state["regressed"] == None or "registers" not in state["regressed"]:
@@ -126,8 +136,11 @@ class DiffDebug(App):
         base_file_contents = state["base"]["registers"]
         regressed_file_contents = state["regressed"]["registers"]
 
-        self.diff_reg1.value = self.diff_driver.get_diff(base_file_contents, regressed_file_contents, "base")
-        self.diff_reg2.value = self.diff_driver.get_diff(regressed_file_contents, base_file_contents, "regressed")
+        diff1 = self.diff_driver.get_diff(base_file_contents, regressed_file_contents, "base")
+        self.diff_reg1.text(diff1)
+
+        diff2 = self.diff_driver.get_diff(regressed_file_contents, base_file_contents, "regressed")
+        self.diff_reg2.text(diff2)
 
     async def on_load(self) -> None:
         self.bind("q", "quit", description="Quit")
@@ -169,12 +182,12 @@ command: {self.parallel_command_bar.value}
 
         if self.base_command_bar.value != "":
             result = Debugger.run_single_command(self.base_command_bar.value, "base")
-            self.diff_area1.value = result
+            self.diff_area1.append(result)
             self.base_command_bar.value = ""
 
         if self.regressed_command_bar.value != "":
             result = Debugger.run_single_command(self.regressed_command_bar.value, "regressed")
-            self.diff_area2.value = result
+            self.diff_area2.append(result)
             self.regressed_command_bar.value = ""
 
     async def action_next_tab_index(self) -> None:
