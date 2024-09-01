@@ -235,6 +235,7 @@ command: {self.parallel_command_bar.value}
         yield self.diff_area2
 
         yield self.parallel_command_bar
+        self.parallel_command_bar.focus()
 
         yield Footer()
 
