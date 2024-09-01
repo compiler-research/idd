@@ -193,7 +193,6 @@ command: {self.parallel_command_bar.value}
             result = Debugger.run_single_command(self.regressed_command_bar.value, "regressed")
             self.diff_area2.value = result
             self.regressed_command_bar.value = ""
-        a = event
 
 if __name__ == "__main__":
     Debugger = None
