@@ -3,20 +3,21 @@ Screen {
     grid-size: 4 10;
 }
 
-#two {
-    column-span: 2;
-    tint: magenta 40%;
-}
-
 TextScrollView {
-    height: 200%;
     border: solid green;
-    column-span: 2;
-    row-span: 5;
 }
 
-#diff-frames1, #diff-frames2, #diff-area1, #diff-area2, #base-command-bar, #regressed-command-bar {
+#diff-frames1, #diff-frames2 {
+    row-span: 2;
+}
+
+#diff-frames1, #diff-frames2, #base-command-bar, #regressed-command-bar {
     column-span: 2;
+}
+
+#diff-area1, #diff-area2 {
+    column-span: 2;
+    row-span: 4;
 }
 
 #parallel-command-bar {
