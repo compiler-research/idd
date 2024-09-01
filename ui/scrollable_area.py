@@ -28,10 +28,15 @@ class TextScrollView(ScrollView):
     }
     """
 
-    def __init__(self, lines: list[str] = [], component_id: str = None) -> None:
+    def __init__(self, title = "", lines: list[str] = None, component_id: str = None) -> None:
         super().__init__()
+        self.border_title = title
+        self.lines = lines if lines is not None else []
         self.lines = lines
-        self.virtual_size = Size(0, len(lines))
+        if lines:
+            self.virtual_size = Size(0, len(lines))
+        else:
+            self.virtual_size = Size(0, 5)
 
         if component_id:
             self.id = component_id
@@ -45,22 +50,26 @@ class TextScrollView(ScrollView):
         scroll_x, scroll_y = self.scroll_offset
         y += scroll_y
 
-        if y >= len(self.lines):
-            return Strip.blank(self.size.width)
+        if self.lines:
+            if y >= len(self.lines):
+                return Strip.blank(self.size.width)
 
-        rich_text = Text.from_markup(self.lines[y])
-        segments = list(rich_text.render(self.app.console))
+            rich_text = Text.from_markup(self.lines[y])
+            segments = list(rich_text.render(self.app.console))
 
-        strip = Strip(segments, sum(segment.cell_length for segment in segments))
-        strip = strip.crop(scroll_x, scroll_x + self.size.width)
-        return strip
+            strip = Strip(segments, sum(segment.cell_length for segment in segments))
+            strip = strip.crop(scroll_x, scroll_x + self.size.width)
+            return strip
+        return Strip.blank(self.size.width)
     
     def append(self, lines: list[str]):
+        if not self.lines:
+            self.lines = []
+
         self.lines += lines
         self.update_virtual_size()
-        self.refresh()
+        self.refresh(layout=True)
         self.scroll_to(y = self.max_scroll_y, speed=300)
-        self.refresh()
 
 
 class CheckerBoard(ScrollView):
