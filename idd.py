@@ -1,24 +1,20 @@
 #https://stackoverflow.com/questions/59591466/how-to-import-lldb-module-for-python-on-mac
 #https://stackoverflow.com/questions/46012328/import-lldb-in-python-3-on-mac
 
+import argparse
+import sys
+
 from textual import on
 from textual.app import App, ComposeResult
-from textual.widgets import Input
 from textual.reactive import Reactive
-from textual.widgets import Static
-from rich.panel import Panel
-from textual.containers import Grid, Container
-from textual import events
+from textual.widgets import Input
 
 from diff_driver import DiffDriver
 
-from ui.header import Header
 from ui.footer import Footer
+from ui.header import Header
 from ui.scrollable_area import TextScrollView
-from ui.diff_area import DiffArea
 
-import argparse
-import sys
 
 class DiffDebug(App):
     CSS_PATH = "layout.tcss"
@@ -142,67 +138,6 @@ class DiffDebug(App):
         diff2 = self.diff_driver.get_diff(regressed_file_contents, base_file_contents, "regressed")
         self.diff_reg2.text(diff2)
 
-    async def on_load(self) -> None:
-        self.bind("q", "quit", description="Quit")
-        self.bind("b", "toggle_sidebar", description="Toggle sidebar")
-        self.bind("escape", "reset_focus")
-        self.bind("enter", "submit", description="Submit")
-        self.bind("ctrl+i", "next_tab_index")
-        self.bind("shift+tab", "previous_tab_index")
-
-    def watch_show_bar(self, show_bar: bool) -> None:
-        """Called when show_bar changes."""
-        self.bar.animate("layout_offset_x", 0 if show_bar else -40)
-
-    async def action_reset_focus(self) -> None:
-        self.current_index = -1
-        await self.header.focus()
-
-    def action_toggle_sidebar(self) -> None:
-        """Called when user hits 'b' key."""
-        #self.show_bar = not self.show_bar
-        #self.diff_area1.page_down()
-        #self.diff_area1.target_y += self.diff_area1.max_scroll_y
-        #self.diff_area1.scroll_to(y = self.diff_area1.max_scroll_y)
-        #self.diff_area1.window.scroll_y = self.diff_area1.virtual_size.height - self.diff_area1.size.height
-
-    async def action_submit(self) -> None:
-        formatted = f"""
-command: {self.parallel_command_bar.value}
-        """
-
-        if self.parallel_command_bar.value != "":
-            result = Debugger.run_parallel_command(self.parallel_command_bar.value)
-            await self.set_common_command_result(result)
-            self.parallel_command_bar.value = ""
-
-            #await self.bar.update(
-            #    Panel(formatted, title="Report", border_style="blue", box=rich.box.SQUARE)
-            #)
-
-        if self.base_command_bar.value != "":
-            result = Debugger.run_single_command(self.base_command_bar.value, "base")
-            self.diff_area1.append(result)
-            self.base_command_bar.value = ""
-
-        if self.regressed_command_bar.value != "":
-            result = Debugger.run_single_command(self.regressed_command_bar.value, "regressed")
-            self.diff_area2.append(result)
-            self.regressed_command_bar.value = ""
-
-    async def action_next_tab_index(self) -> None:
-        """Changes the focus to the next form field"""
-        if self.current_index < len(self.tab_index) - 1:
-            self.current_index += 1
-            await getattr(self, self.tab_index[self.current_index]).focus()
-
-    async def action_previous_tab_index(self) -> None:
-        """Changes the focus to the previous form field"""
-        if self.current_index > 0:
-            self.current_index -= 1
-            await getattr(self, self.tab_index[self.current_index]).focus()
-
-
     def compose(self) -> ComposeResult:
         """Compose the layout of the application."""
 
@@ -251,10 +186,6 @@ command: {self.parallel_command_bar.value}
             result = Debugger.run_parallel_command(self.parallel_command_bar.value)
             await self.set_common_command_result(result)
             self.parallel_command_bar.value = ""
-
-            #await self.bar.update(
-            #    Panel(formatted, title="Report", border_style="blue", box=rich.box.SQUARE)
-            #)
 
         if self.base_command_bar.value != "":
             result = Debugger.run_single_command(self.base_command_bar.value, "base")
