@@ -71,6 +71,15 @@ class TextScrollView(ScrollView):
         self.refresh(layout=True)
         self.scroll_to(y = self.max_scroll_y, speed=300)
 
+    def text(self, lines: list[str]):
+        if not self.lines:
+            self.lines = []
+
+        self.lines = lines
+        self.update_virtual_size()
+        self.refresh(layout=True)
+        self.scroll_to(y = self.max_scroll_y, speed=300)
+
 
 class CheckerBoard(ScrollView):
     COMPONENT_CLASSES = {
