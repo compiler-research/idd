@@ -1,6 +1,3 @@
-#https://stackoverflow.com/questions/59591466/how-to-import-lldb-module-for-python-on-mac
-#https://stackoverflow.com/questions/46012328/import-lldb-in-python-3-on-mac
-
 import argparse
 import sys
 
