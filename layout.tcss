@@ -1,25 +1,28 @@
 Screen {
-    layout: grid;
-    grid-size: 4 10;
+    layout: vertical;
+    height: 100%;
 }
 
 TextScrollView {
     border: solid green;
 }
 
-#diff-frames1, #diff-frames2 {
-    row-span: 2;
+.row1 {
+    height: 20%;
 }
 
-#diff-frames1, #diff-frames2, #base-command-bar, #regressed-command-bar {
-    column-span: 2;
+.row2 {
+    height: 30%;
 }
 
-#diff-area1, #diff-area2 {
-    column-span: 2;
-    row-span: 4;
+.diff-asm-reg {
+    height: 10%;
 }
 
-#parallel-command-bar {
-    column-span: 4;
+.row3, .row5 {
+    height: 6%;
+}
+
+.row4 {
+    height: 40%;
 }
