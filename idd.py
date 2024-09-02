@@ -200,7 +200,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Diff Debug for simple debugging!')
     parser.add_argument('-c','--comparator', help='Choose a comparator', default='gdb')
     parser.add_argument('-ba','--base-args', help='Base executable args', default='[]', nargs='+')
+    parser.add_argument('-bs','--base-script-path', help='Base preliminary script file path', default='[]', nargs='+')
     parser.add_argument('-ra','--regression-args', help='Regression executable args', default='[]', nargs='+')
+    parser.add_argument('-rs','--regression-script-path', help='Regression prelimminary script file path', default='[]', nargs='+')
     parser.add_argument('-r','--remote_host', help='The host of the remote server', default='localhost')
     parser.add_argument('-p','--platform', help='The platform of the remote server: macosx, linux', default='linux')
     parser.add_argument('-t','--triple', help='The target triple: x86_64-apple-macosx, x86_64-gnu-linux', default='x86_64-gnu-linux')
@@ -209,12 +211,14 @@ if __name__ == "__main__":
 
     comperator = args['comparator']
     ba = ' '.join(args['base_args'])
+    bs = ' '.join(args['base_script_path'])
     ra = ' '.join(args['regression_args'])
+    rs = ' '.join(args['regression_script_path'])
 
     if comperator == 'gdb':
         from debuggers.gdb.gdb_mi_driver import GDBMiDebugger
 
-        Debugger = GDBMiDebugger(ba, ra)
+        Debugger = GDBMiDebugger(ba, bs, ra, rs)
     elif comperator == 'lldb':
         from debuggers.lldb.lldb_driver import LLDBDebugger
 

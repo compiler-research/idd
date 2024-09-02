@@ -16,9 +16,9 @@ class GDBMiDebugger(Driver):
 
     gdb_instances = None
 
-    def __init__(self, base_args, regression_args):
-        self.base_gdb_instance = IDDGdbController()
-        self.regressed_gdb_instance = IDDGdbController()
+    def __init__(self, base_args, base_script_file_path, regression_args, regression_script_file_path):
+        self.base_gdb_instance = IDDGdbController(base_script_file_path)
+        self.regressed_gdb_instance = IDDGdbController(regression_script_file_path)
 
         self.gdb_instances = { 'base': self.base_gdb_instance, 'regressed': self.regressed_gdb_instance }
 
