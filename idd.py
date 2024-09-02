@@ -5,6 +5,7 @@ from textual import on
 from textual.app import App, ComposeResult
 from textual.reactive import Reactive
 from textual.widgets import Input
+from textual.containers import Horizontal, Vertical
 
 from diff_driver import DiffDriver
 
@@ -137,39 +138,45 @@ class DiffDebug(App):
 
     def compose(self) -> ComposeResult:
         """Compose the layout of the application."""
+        with Vertical():
+            yield Header()
 
-        yield Header()
+            with Horizontal(classes="row1"):
+                yield self.diff_frames1
+                yield self.diff_frames2
 
-        # Diff areas
-        yield self.diff_frames1
-        yield self.diff_frames2
-        
-        yield self.diff_locals1
-        yield self.diff_locals2
- 
-        yield self.diff_args1
-        yield self.diff_args2
-        
-        yield self.diff_asm1
-        yield self.diff_asm2 
+            with Horizontal(classes="row2"):
+                with Horizontal():
+                    yield self.diff_locals1
+                    yield self.diff_locals2
+                    yield self.diff_args1
+                    yield self.diff_args2
 
-        yield self.diff_reg1
-        yield self.diff_reg2
-        
-        #yield self.executable_path1
-        #yield self.executable_path2
-        
-        # Compose the view
-        yield self.base_command_bar
-        yield self.regressed_command_bar
+                with Vertical():
+                    with Horizontal():
+                        yield self.diff_reg1
+                        yield self.diff_reg2
+                    with Horizontal():
+                        yield self.diff_asm1
+                        yield self.diff_asm2
 
-        yield self.diff_area1
-        yield self.diff_area2
+            #yield self.executable_path1
+            #yield self.executable_path2
 
-        yield self.parallel_command_bar
-        self.parallel_command_bar.focus()
+            with Horizontal(classes="row3"):
+                yield self.base_command_bar
+                yield self.regressed_command_bar
 
-        yield Footer()
+            with Horizontal(classes="row4"):
+                yield self.diff_area1
+                yield self.diff_area2
+
+            with Horizontal(classes="row5"):
+                yield self.parallel_command_bar
+
+            self.parallel_command_bar.focus()
+
+            yield Footer()
 
     @on(Input.Submitted)
     async def execute_debugger_command(self, event: Input.Changed) -> None:
