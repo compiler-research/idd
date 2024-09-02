@@ -1,0 +1,25 @@
+Screen {
+    layout: grid;
+    grid-size: 4 10;
+}
+
+TextScrollView {
+    border: solid green;
+}
+
+#diff-frames1, #diff-frames2 {
+    row-span: 2;
+}
+
+#diff-frames1, #diff-frames2, #base-command-bar, #regressed-command-bar {
+    column-span: 2;
+}
+
+#diff-area1, #diff-area2 {
+    column-span: 2;
+    row-span: 4;
+}
+
+#parallel-command-bar {
+    column-span: 4;
+}

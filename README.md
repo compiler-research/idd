@@ -65,5 +65,5 @@ Join our discord for discussions and collaboration.
 
 ## Issues
 1. ~~Support entering commands to a specific analyzer.~~
-2. Make panels scrollable
+2. ~~Make panels scrollable~~
 3. Make panels configurable
