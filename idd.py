@@ -186,12 +186,12 @@ command: {self.parallel_command_bar.value}
 
         if self.base_command_bar.value != "":
             result = Debugger.run_single_command(self.base_command_bar.value, "base")
-            self.diff_area1.value = result
+            self.diff_area1.append(result)
             self.base_command_bar.value = ""
 
         if self.regressed_command_bar.value != "":
             result = Debugger.run_single_command(self.regressed_command_bar.value, "regressed")
-            self.diff_area2.value = result
+            self.diff_area2.append(result)
             self.regressed_command_bar.value = ""
 
 if __name__ == "__main__":
