@@ -175,24 +175,31 @@ class DiffDebug(App):
     async def execute_debugger_command(self, event: Input.Changed) -> None:
         # Updating the UI to show the reasons why validation failed
         if event.control.id == 'parallel-command-bar':
-            formatted = f"""
-command: {self.parallel_command_bar.value}
-        """
+            if self.parallel_command_bar.value != "":
+                result = Debugger.run_parallel_command(self.parallel_command_bar.value)
 
-        if self.parallel_command_bar.value != "":
-            result = Debugger.run_parallel_command(self.parallel_command_bar.value)
-            await self.set_common_command_result(result)
-            self.parallel_command_bar.value = ""
+                self.diff_area1.append([self.parallel_command_bar.value])
+                self.diff_area2.append([self.parallel_command_bar.value])
 
-        if self.base_command_bar.value != "":
-            result = Debugger.run_single_command(self.base_command_bar.value, "base")
-            self.diff_area1.append(result)
-            self.base_command_bar.value = ""
+                await self.set_common_command_result(result)
 
-        if self.regressed_command_bar.value != "":
-            result = Debugger.run_single_command(self.regressed_command_bar.value, "regressed")
-            self.diff_area2.append(result)
-            self.regressed_command_bar.value = ""
+                self.parallel_command_bar.value = ""
+
+        elif event.control.id == 'base-command-bar':
+            if self.base_command_bar.value != "":
+                result = Debugger.run_single_command(self.base_command_bar.value, "base")
+                self.diff_area1.append([self.base_command_bar.value])
+                self.diff_area1.append(result)
+
+                self.base_command_bar.value = ""
+
+        elif event.control.id == 'regressed-command-bar':
+            if self.regressed_command_bar.value != "":
+                result = Debugger.run_single_command(self.regressed_command_bar.value, "regressed")
+                self.diff_area2.append([self.regressed_command_bar.value])
+                self.diff_area2.append(result)
+
+                self.regressed_command_bar.value = ""
 
 if __name__ == "__main__":
     Debugger = None
