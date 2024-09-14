@@ -46,6 +46,11 @@ class DiffDebug(App):
     base_command_bar = Input(placeholder="Enter your base command here...", name="base_command_bar", id="base-command-bar")
     regressed_command_bar = Input(placeholder="Enter your regression command here...", name="regressed_command_bar", id="regressed-command-bar")
 
+    def __init__(self, disable_asm=False, disable_registers=False):
+        super().__init__()
+        self.disable_asm = disable_asm
+        self.disable_registers = disable_registers
+
     async def set_common_command_result(self, command_result) -> None:
         if command_result:
             raw_base_contents = command_result["base"]
@@ -58,8 +63,10 @@ class DiffDebug(App):
             await self.set_pframes_command_result(state)
             await self.set_pargs_command_result(state)
             await self.set_plocals_command_result(state)
-            await self.set_pasm_command_result(state)
-            await self.set_pregisters_command_result(state)
+            if not disable_assembly:
+                await self.set_pasm_command_result(state)
+            if not disable_registers:
+                await self.set_pregisters_command_result(state)
 
             #calls = Debugger.get_current_calls()
 
@@ -148,17 +155,36 @@ class DiffDebug(App):
             with Horizontal(classes="row2"):
                 with Horizontal():
                     yield self.diff_locals1
+                    yield self.diff_args1
+                if not self.disable_registers and not self.disable_asm:
+                    with Vertical():
+                        with Horizontal():
+                            yield self.diff_reg1
+                        with Horizontal():
+                            yield self.diff_asm1
+                elif not self.disable_asm:
+                    with Vertical():
+                            yield self.diff_asm1
+                elif not self.disable_registers:
+                    with Vertical():
+                            yield self.diff_reg1
+                
+                with Horizontal():
                     yield self.diff_locals2
                     yield self.diff_args1
                     yield self.diff_args2
-
-                with Vertical():
-                    with Horizontal():
-                        yield self.diff_reg1
-                        yield self.diff_reg2
-                    with Horizontal():
-                        yield self.diff_asm1
-                        yield self.diff_asm2
+                if not self.disable_registers and not self.disable_asm:
+                    with Vertical():
+                        with Horizontal():
+                            yield self.diff_reg2
+                        with Horizontal():
+                            yield self.diff_asm2
+                elif not self.disable_asm:
+                    with Vertical():
+                            yield self.diff_asm2
+                elif not self.disable_registers:
+                    with Vertical():
+                            yield self.diff_reg2
 
             #yield self.executable_path1
             #yield self.executable_path2
@@ -218,29 +244,33 @@ if __name__ == "__main__":
     parser.add_argument('-ba','--base-args', help='Base executable args', default='[]', nargs='+')
     parser.add_argument('-bs','--base-script-path', help='Base preliminary script file path', default=None, nargs='+')
     parser.add_argument('-ra','--regression-args', help='Regression executable args', default='[]', nargs='+')
-    parser.add_argument('-rs','--regression-script-path', help='Regression prelimminary script file path', default=None, nargs='+')
+    parser.add_argument('-rs','--regression-script-path', help='Regression preliminary script file path', default=None, nargs='+')
     parser.add_argument('-r','--remote_host', help='The host of the remote server', default='localhost')
     parser.add_argument('-p','--platform', help='The platform of the remote server: macosx, linux', default='linux')
     parser.add_argument('-t','--triple', help='The target triple: x86_64-apple-macosx, x86_64-gnu-linux', default='x86_64-gnu-linux')
     parser.add_argument('-lvf','--local-vars-filter', help='Filter for the local vars: local-vars-filter', default='x86_64-gnu-linux')
+    parser.add_argument('--disable-assembly', help='Disables the assembly panel', default=False, action='store_true')
+    parser.add_argument('--disable-registers', help='Disables the registers panel', default=False, action='store_true')
     args = vars(parser.parse_args())
 
-    comperator = args['comparator']
+    comparator = args['comparator']
     ba = ' '.join(args['base_args'])
     bs = ' '.join(args['base_script_path']) if args['base_script_path'] is not None else None
     ra = ' '.join(args['regression_args'])
     rs = ' '.join(args['regression_script_path']) if args["regression_script_path"] is not None else None
 
-    if comperator == 'gdb':
+    if comparator == 'gdb':
         from debuggers.gdb.gdb_mi_driver import GDBMiDebugger
 
         Debugger = GDBMiDebugger(ba, bs, ra, rs)
-    elif comperator == 'lldb':
+    elif comparator == 'lldb':
         from debuggers.lldb.lldb_driver import LLDBDebugger
 
         Debugger = LLDBDebugger(ba, ra)
     else:
         sys.exit("Invalid comparator set")
 
-    dd = DiffDebug()
+    disable_registers = args["disable_registers"]
+    disable_assembly = args["disable_assembly"]
+    dd = DiffDebug(disable_assembly, disable_registers)
     dd.run()
