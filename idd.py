@@ -164,8 +164,10 @@ class DiffDebug(App):
             #yield self.executable_path2
 
             with Horizontal(classes="row3"):
-                yield self.base_command_bar
-                yield self.regressed_command_bar
+                with Vertical():
+                    yield self.base_command_bar
+                with Vertical():
+                    yield self.regressed_command_bar
 
             with Horizontal(classes="row4"):
                 yield self.diff_area1
