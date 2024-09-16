@@ -162,3 +162,6 @@ class LLDBDebugger(Driver):
         regression_calls = get_call_instructions(regression_target)
 
         return { "base" : base_calls, "regressed" : regression_calls }
+    
+    def terminate(self):
+        pass

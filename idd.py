@@ -272,6 +272,10 @@ class DiffDebug(App):
     async def execute_debugger_command(self, event: Input.Changed) -> None:
         # Updating the UI to show the reasons why validation failed
         if event.control.id == 'parallel-command-bar':
+            if self.parallel_command_bar.value == "quit" or \
+                self.parallel_command_bar.value == "exit":
+                Debugger.terminate()
+                exit(0)
             if self.parallel_command_bar.value != "":
                 result = Debugger.run_parallel_command(self.parallel_command_bar.value)
 
