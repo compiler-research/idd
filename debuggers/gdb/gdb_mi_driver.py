@@ -134,20 +134,26 @@ class GDBMiDebugger(Driver):
         return { "base" : base_stack_frame, "regressed" : regression_stack_frame }
 
     def run_parallel_raw_command(self, command):
-        base_result = str(self.run_single_raw_command(command, "base"))
-        regression_result = str(self.run_single_raw_command(command, "regressed"))
+        self.base_gdb_instance.send((("{command}\n".format(command = command),), {"timeout_sec": 60}))
+        self.regressed_gdb_instance.send((("{command}\n".format(command = command),), {"timeout_sec": 60}))
+
+        raw_result = self.base_gdb_instance.recv()
+        base_result = str(self.parse_raw_command_output(raw_result))
+        raw_result = self.regressed_gdb_instance.recv()
+        regression_result = str(self.parse_raw_command_output(raw_result))
 
         return { "base": base_result, "regressed": regression_result }
 
-    def run_single_raw_command(self, command, version):
+    def parse_raw_command_output(self, raw_result):
         result = []
-        self.gdb_instances[version].send((("{command}\n".format(command = command),), {"timeout_sec": 60}))
-        raw_result = self.gdb_instances[version].recv()
-
         for item in raw_result:
             result.append(str(item))
-
         return result
+
+    def run_single_raw_command(self, command, version):
+        self.gdb_instances[version].send((("{command}\n".format(command = command),), {"timeout_sec": 60}))
+        raw_result = self.gdb_instances[version].recv()
+        return self.parse_raw_command_output(raw_result)
 
     def terminate(self):
         terminate_all_IDDGdbController()
