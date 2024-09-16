@@ -311,9 +311,11 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Diff Debug for simple debugging!')
     parser.add_argument('-c','--comparator', help='Choose a comparator', default='gdb')
-    parser.add_argument('-ba','--base-args', help='Base executable args', default='[]', nargs='+')
+    parser.add_argument('-ba','--base-args', help='Base executable args', default="", nargs='+')
+    parser.add_argument('-bpid','--base-processid', help='Base process ID', default=None)
     parser.add_argument('-bs','--base-script-path', help='Base preliminary script file path', default=None, nargs='+')
-    parser.add_argument('-ra','--regression-args', help='Regression executable args', default='[]', nargs='+')
+    parser.add_argument('-ra','--regression-args', help='Regression executable args', default="", nargs='+')
+    parser.add_argument('-rpid','--regression-processid', help='Regression process ID', default=None)
     parser.add_argument('-rs','--regression-script-path', help='Regression preliminary script file path', default=None, nargs='+')
     parser.add_argument('-r','--remote_host', help='The host of the remote server', default='localhost')
     parser.add_argument('-p','--platform', help='The platform of the remote server: macosx, linux', default='linux')
@@ -325,17 +327,36 @@ if __name__ == "__main__":
 
     comparator = args['comparator']
     ba = ' '.join(args['base_args'])
+    bpid = args['base_processid']
     bs = ' '.join(args['base_script_path']) if args['base_script_path'] is not None else None
     ra = ' '.join(args['regression_args'])
+    rpid = args['regression_processid']
     rs = ' '.join(args['regression_script_path']) if args["regression_script_path"] is not None else None
 
     if comparator == 'gdb':
         from debuggers.gdb.gdb_mi_driver import GDBMiDebugger
 
-        Debugger = GDBMiDebugger(ba, bs, ra, rs)
+        if ba != "" and bpid is not None:
+            raise Exception("Both executable and process ID given for base. This is not possible")
+        if ra != "" and rpid is not None:
+            raise Exception("Both executable and process ID given for regression. This is not possible")
+        
+        if ba == "":
+            if ra == "":
+                Debugger = GDBMiDebugger(ba, bs, ra, rs, base_pid=bpid, regression_pid=rpid)
+            else:
+                Debugger = GDBMiDebugger(ba, bs, ra, rs, base_pid=bpid)
+        else:
+            if ra == "":
+                Debugger = GDBMiDebugger(ba, bs, ra, rs, regression_pid=rpid)
+            else:
+                Debugger = GDBMiDebugger(ba, bs, ra, rs)
+
     elif comparator == 'lldb':
         from debuggers.lldb.lldb_driver import LLDBDebugger
 
+        if ba == "" or ra == "":
+            raise Exception("LLDB can only be used by launching executable and executable is not provided")
         Debugger = LLDBDebugger(ba, ra)
     else:
         sys.exit("Invalid comparator set")
