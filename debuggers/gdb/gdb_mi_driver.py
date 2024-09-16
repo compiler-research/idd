@@ -34,24 +34,12 @@ class GDBMiDebugger(Driver):
         self.regressed_gdb_instance.send(((" {command}\n".format(command = command),), {"timeout_sec": 60}))
         
         # wait till base is done
-        raw_result = self.base_gdb_instance.recv()
-        
-        # make sure all output is flushed
-        # time.sleep(.005)
-        self.base_gdb_instance.send((("",), {"timeout_sec": 60}))
-        raw_result += self.base_gdb_instance.recv()
-        
+        raw_result = self.base_gdb_instance.recv()        
         # parse output (base)
         base_response = self.parse_command_output(raw_result)
         
         # wait till regression is done
-        raw_result = self.regressed_gdb_instance.recv()
-        
-        # make sure all output is flushed
-        # time.sleep(.005)
-        self.regressed_gdb_instance.send((("",), {"timeout_sec": 60}))
-        raw_result += self.regressed_gdb_instance.recv()
-        
+        raw_result = self.regressed_gdb_instance.recv()        
         # parse output regression
         regressed_response = self.parse_command_output(raw_result)
 
@@ -72,12 +60,7 @@ class GDBMiDebugger(Driver):
         
         self.gdb_instances[version].send(((" {command}\n".format(command = command),), {"timeout_sec": 60}))
         raw_result = self.gdb_instances[version].recv()
-        
-        # make sure all output is flushed
-        # time.sleep(.005)
-        self.gdb_instances[version].send((("",), {"timeout_sec": 60}))
-        raw_result += self.gdb_instances[version].recv()
-        
+
         return self.parse_command_output(raw_result)
 
     def run_single_special_command(self, command, version):
@@ -86,10 +69,6 @@ class GDBMiDebugger(Driver):
 
         self.gdb_instances[version].send(((" {command}\n".format(command = command),), {"timeout_sec": 60}))
         raw_result = self.gdb_instances[version].recv()
-
-        # flush output
-        self.gdb_instances[version].send((("",), {"timeout_sec": 60}))
-        raw_result += self.gdb_instances[version].recv()
 
         return self.parse_special_command_output(raw_result)
 
