@@ -7,3 +7,6 @@ class Driver(metaclass=abc.ABCMeta):
 
     @abstractmethod
     def run_parallel_command(self, command): raise NotImplementedError
+    
+    @abstractmethod
+    def terminate(self): raise NotImplementedError

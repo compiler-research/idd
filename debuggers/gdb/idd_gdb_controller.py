@@ -8,6 +8,10 @@ from pygdbmi.constants import (
     DEFAULT_TIME_TO_CHECK_FOR_ADDITIONAL_OUTPUT_SEC,
 )
 
+from multiprocessing import Process, Pipe
+
+processes = []
+
 DEFAULT_GDB_LAUNCH_COMMAND = ["gdb", "--nx", "--quiet", "--interpreter=mi3"]
 logger = logging.getLogger(__name__)
 
@@ -49,3 +53,39 @@ class IDDGdbController(GdbController):
             self.time_to_check_for_additional_output_sec,
         )
         return self.gdb_process.pid
+
+
+class IDDParallelTerminate:
+    pass
+
+
+class IDDParallelGdbController:
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+    
+    def run(self, pipe):
+        gdb = IDDGdbController(*self.args, **self.kwargs)
+        while True:
+            args, kwargs = pipe.recv()
+            if isinstance(args, IDDParallelTerminate) or isinstance(kwargs, IDDParallelTerminate):
+                return
+            res = gdb.write(*args, **kwargs)
+            pipe.send(res)
+
+
+def create_IDDGdbController(*args, **kwargs):
+    global processes
+
+    gdb = IDDParallelGdbController(*args, **kwargs)
+    parent_conn, child_conn = Pipe()
+    process = Process(target=gdb.run, args=(child_conn,))
+    processes.append((process, parent_conn))
+    process.start()
+    return parent_conn
+
+def terminate_all_IDDGdbController():
+    for _, pipe in processes:
+        pipe.send((IDDParallelTerminate(), IDDParallelTerminate()))
+    for process, _ in processes:
+        process.join()
