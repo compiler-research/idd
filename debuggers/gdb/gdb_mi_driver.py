@@ -42,12 +42,12 @@ class GDBMiDebugger(Driver):
         self.regressed_gdb_instance.send(((" {command}\n".format(command = command),), {"timeout_sec": 60}))
         
         # wait till base is done
-        raw_result = self.base_gdb_instance.recv()        
+        raw_result = self.base_gdb_instance.recv()
         # parse output (base)
         base_response = self.parse_command_output(raw_result)
         
         # wait till regression is done
-        raw_result = self.regressed_gdb_instance.recv()        
+        raw_result = self.regressed_gdb_instance.recv()
         # parse output regression
         regressed_response = self.parse_command_output(raw_result)
 
