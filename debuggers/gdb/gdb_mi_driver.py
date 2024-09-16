@@ -72,11 +72,14 @@ class GDBMiDebugger(Driver):
                 if parsed_dict:
                     return parsed_dict
 
-    def get_state(self):
-        base_state = self.run_single_special_command('pstate', 'base')
-        regression_state = self.run_single_special_command('pstate', 'regressed')
+    def get_state(self, version=None):
+        if version is None:
+            base_state = self.run_single_special_command('pstate', 'base')
+            regression_state = self.run_single_special_command('pstate', 'regressed')
 
-        return { "base" : base_state, "regressed" : regression_state }
+            return { "base" : base_state, "regressed" : regression_state }
+
+        return self.run_single_special_command("pstate", version)
 
     def get_current_stack_frames(self, state):
         base_stack_frame = state['base']['stack_frame']

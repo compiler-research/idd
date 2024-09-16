@@ -51,6 +51,17 @@ class DiffDebug(App):
         self.disable_asm = disable_asm
         self.disable_registers = disable_registers
 
+    async def set_command_result(self, version) -> None:
+        state = Debugger.get_state(version)
+
+        await self.set_pframes_result(state, version)
+        await self.set_pargs_result(state, version)
+        await self.set_plocals_result(state, version)
+        if not disable_assembly:
+            await self.set_pasm_result(state, version)
+        if not disable_registers:
+            await self.set_pregisters_result(state, version)
+
     async def set_common_command_result(self, command_result) -> None:
         if command_result:
             raw_base_contents = command_result["base"]
@@ -77,6 +88,16 @@ class DiffDebug(App):
 
             diff2 = self.diff_driver.get_diff(raw_regression_contents, raw_base_contents, "regressed")
             self.diff_area2.append(diff2)
+    
+    async def set_pframes_result(self, state, version) -> None:
+        if state == None or "stack_frames" not in state:
+            return
+
+        file_contents = state["stack_frames"]
+        if version == "base":
+            self.diff_frames1.text(file_contents)
+        else:
+            self.diff_frames2.text(file_contents)
 
     async def set_pframes_command_result(self, state) -> None:
         if state["base"] == None or "stack_frames" not in state["base"] or state["regressed"] == None or "stack_frames" not in state["regressed"]:
@@ -91,6 +112,17 @@ class DiffDebug(App):
         diff2 = self.diff_driver.get_diff(regressed_file_contents, base_file_contents, "regressed")
         self.diff_frames2.text(diff2)
 
+    async def set_plocals_result(self, state, version) -> None:
+        if state == None or "locals" not in state:
+            return
+        
+        file_contents = state["locals"]
+        if version == "base":
+            self.diff_locals1.text(file_contents)
+        else:
+            self.diff_locals2.text(file_contents)
+
+
     async def set_plocals_command_result(self, state) -> None:
         if state["base"] == None or "locals" not in state["base"] or state["regressed"] == None or "locals" not in state["regressed"]:
             return
@@ -103,6 +135,16 @@ class DiffDebug(App):
 
         diff2 = self.diff_driver.get_diff(regressed_file_contents, base_file_contents, "regressed")
         self.diff_locals2.text(diff2)
+
+    async def set_pargs_result(self, state, version) -> None:
+        if state == None or "args" not in state:
+            return
+        
+        file_contents = state["args"]
+        if version == "base":
+            self.diff_args1.text(file_contents)
+        else:
+            self.diff_args2.text(file_contents)
 
     async def set_pargs_command_result(self, state) -> None:
         if state["base"] == None or "args" not in state["base"] or state["regressed"] == None or "args" not in state["regressed"]:
@@ -117,6 +159,16 @@ class DiffDebug(App):
         diff2 = self.diff_driver.get_diff(regressed_file_contents, base_file_contents, "regressed")
         self.diff_args2.text(diff2)
 
+    async def set_pasm_result(self, state, version) -> None:
+        if state == None or "instructions" not in state:
+            return
+        
+        file_contents = state["instructions"]
+        if version == "base":
+            self.diff_asm1.text(file_contents)
+        else:
+            self.diff_asm2.text(file_contents)
+
     async def set_pasm_command_result(self, state) -> None:
         if state["base"] == None or "instructions" not in state["base"] or state["regressed"] == None or "instructions" not in state["regressed"]:
             return
@@ -129,6 +181,16 @@ class DiffDebug(App):
 
         diff2 = self.diff_driver.get_diff(regressed_file_contents, base_file_contents, "regressed")
         self.diff_asm2.text(diff2)
+
+    async def set_pregisters_result(self, state, version) -> None:
+        if state == None or "registers" not in state:
+            return
+        
+        file_contents = state["registers"]
+        if version == "base":
+            self.diff_reg1.text(file_contents)
+        else:
+            self.diff_reg2.text(file_contents)
 
     async def set_pregisters_command_result(self, state) -> None:
         if state["base"] == None or "registers" not in state["base"] or state["regressed"] == None or "registers" not in state["regressed"]:
@@ -226,6 +288,8 @@ class DiffDebug(App):
                 self.diff_area1.append([self.base_command_bar.value])
                 self.diff_area1.append(result)
 
+                await self.set_command_result("base")
+
                 self.base_command_bar.value = ""
 
         elif event.control.id == 'regressed-command-bar':
@@ -233,6 +297,8 @@ class DiffDebug(App):
                 result = Debugger.run_single_command(self.regressed_command_bar.value, "regressed")
                 self.diff_area2.append([self.regressed_command_bar.value])
                 self.diff_area2.append(result)
+
+                await self.set_command_result("regressed")
 
                 self.regressed_command_bar.value = ""
 
