@@ -29,9 +29,13 @@ class LLDBDebugger(Driver):
 
         base_error = lldb.SBError()
         base_target = self.base_lldb_instance.CreateTarget(base_args, "x86_64", "host", True, base_error)
+        if not base_error.Success():
+            raise Exception(base_error.GetCString())
 
         regression_error = lldb.SBError()
         regression_target = self.regression_lldb_instance.CreateTarget(regression_args, "x86_64", "host", True, regression_error)
+        if not regression_error.Success():
+            raise Exception(regression_error.GetCString())
 
         self.base_command_interpreter = self.base_lldb_instance.GetCommandInterpreter()
         self.regression_command_interpreter = self.regression_lldb_instance.GetCommandInterpreter()
