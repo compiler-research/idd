@@ -13,6 +13,8 @@ def get_current_stack_frame_from_target(target):
         if not function:
             # No debug info for 'function'.
             symbol = frame.GetSymbol()
+            if not symbol:
+                continue
             file_addr = addr.GetFileAddress()
             start_addr = symbol.GetStartAddress().GetFileAddress()
             symbol_name = symbol.GetName()
