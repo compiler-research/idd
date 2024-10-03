@@ -81,16 +81,19 @@ class LLDBDebugger(Driver):
 
         return ""
 
-    def get_state(self):
+    def get_state(self, version=None):
         result = {}
         base_state = {}
         regression_state = {}
 
-        result['stack_frames'] = self.get_current_stack_frames()
-        result['locals'] = self.get_current_local_vars(None)
-        result['args'] = self.get_current_args()
-        result['instructions'] = self.get_current_instructions()
-        result['registers'] = self.get_current_registers()
+        result['stack_frames'] = self.get_current_stack_frames(version)
+        result['locals'] = self.get_current_local_vars(None, version)
+        result['args'] = self.get_current_args(version)
+        result['instructions'] = self.get_current_instructions(version)
+        result['registers'] = self.get_current_registers(version)
+
+        if version is not None:
+            return result
 
         base_state['stack_frames'] = result['stack_frames']['base']
         regression_state['stack_frames'] = result['stack_frames']['regressed']
@@ -109,62 +112,115 @@ class LLDBDebugger(Driver):
 
         return { "base" : base_state, "regressed" : regression_state }
 
-    def get_current_stack_frames(self):
+    def get_current_stack_frames(self, version=None):
+        if version == "base":
+            base_target = self.base_lldb_instance.GetTargetAtIndex(0)
+            base_stack_frame = get_current_stack_frame_from_target(base_target)
+            return base_stack_frame
+        
+        if version == "regressed":
+            regression_target = self.regression_lldb_instance.GetTargetAtIndex(0)
+            regression_stack_frame = get_current_stack_frame_from_target(regression_target)
+            return regression_stack_frame
+        
         base_target = self.base_lldb_instance.GetTargetAtIndex(0)
-        regression_target = self.regression_lldb_instance.GetTargetAtIndex(0)
-
         base_stack_frame = get_current_stack_frame_from_target(base_target)
+        regression_target = self.regression_lldb_instance.GetTargetAtIndex(0)
         regression_stack_frame = get_current_stack_frame_from_target(regression_target)
 
         return { "base" : base_stack_frame, "regressed" : regression_stack_frame }
 
-    def get_current_args(self):
+    def get_current_args(self, version=None):
+        if version == "base":
+            base_target = self.base_lldb_instance.GetTargetAtIndex(0)
+            base_args = get_args_as_list(base_target)
+            return base_args
+        
+        if version == "regressed":
+            regression_target = self.regression_lldb_instance.GetTargetAtIndex(0)
+            regression_args = get_args_as_list(regression_target)
+            return regression_args
+
         base_target = self.base_lldb_instance.GetTargetAtIndex(0)
-        regression_target = self.regression_lldb_instance.GetTargetAtIndex(0)
-
         base_args = get_args_as_list(base_target)
+        regression_target = self.regression_lldb_instance.GetTargetAtIndex(0)
         regression_args = get_args_as_list(regression_target)
-
         return { "base" : base_args, "regressed" : regression_args }
 
-    def get_current_local_vars(self, filters):
+    def get_current_local_vars(self, filters, version=None):
+        if version == "base":
+            base_target = self.base_lldb_instance.GetTargetAtIndex(0)
+            base_locals = get_local_vars_as_list(base_target)
+            if filters == 'ignore-order-declaration':
+                base_locals.sort()
+            return base_locals
+
+        if version == "regressed":
+            regression_target = self.regression_lldb_instance.GetTargetAtIndex(0)
+            regression_locals = get_local_vars_as_list(regression_target)
+            if filters == 'ignore-order-declaration':
+                regression_locals.sort()
+            return regression_locals
+
         base_target = self.base_lldb_instance.GetTargetAtIndex(0)
-        regression_target = self.regression_lldb_instance.GetTargetAtIndex(0)
-
         base_locals = get_local_vars_as_list(base_target)
+        regression_target = self.regression_lldb_instance.GetTargetAtIndex(0)
         regression_locals = get_local_vars_as_list(regression_target)
-
         if filters == 'ignore-order-declaration':
             base_locals.sort()
             regression_locals.sort()
 
         return { "base" : base_locals, "regressed" : regression_locals }
 
-    def get_current_instructions(self):
-        base_target = self.base_lldb_instance.GetTargetAtIndex(0)
-        regression_target = self.regression_lldb_instance.GetTargetAtIndex(0)
+    def get_current_instructions(self, version=None):
+        if version == "base":
+            base_target = self.base_lldb_instance.GetTargetAtIndex(0)
+            base_args = get_instructions_as_list(base_target)
+            return base_args
+        
+        if version == "regressed":
+            regression_target = self.regression_lldb_instance.GetTargetAtIndex(0)
+            regression_args = get_instructions_as_list(regression_target)
+            return regression_args
 
+        base_target = self.base_lldb_instance.GetTargetAtIndex(0)
         base_args = get_instructions_as_list(base_target)
+        regression_target = self.regression_lldb_instance.GetTargetAtIndex(0)
         regression_args = get_instructions_as_list(regression_target)
-
         return { "base" : base_args, "regressed" : regression_args }
 
-    def get_current_registers(self):
-        base_target = self.base_lldb_instance.GetTargetAtIndex(0)
-        regression_target = self.regression_lldb_instance.GetTargetAtIndex(0)
+    def get_current_registers(self, version=None):
+        if version == "base":
+            base_target = self.base_lldb_instance.GetTargetAtIndex(0)
+            base_args = get_registers_as_list(base_target)
+            return base_args
 
+        if version == "regressed":
+            regression_target = self.regression_lldb_instance.GetTargetAtIndex(0)
+            regression_args = get_registers_as_list(regression_target)
+            return regression_args
+
+        base_target = self.base_lldb_instance.GetTargetAtIndex(0)
         base_args = get_registers_as_list(base_target)
+        regression_target = self.regression_lldb_instance.GetTargetAtIndex(0)
         regression_args = get_registers_as_list(regression_target)
-
         return { "base" : base_args, "regressed" : regression_args }
 
-    def get_current_calls(self):
+    def get_current_calls(self, version=None):
+        if version == "base":
+            base_target = self.base_lldb_instance.GetTargetAtIndex(0)
+            base_calls = get_call_instructions(base_target)
+            return base_calls
+        
+        if version == "regressed":
+            regression_target = self.regression_lldb_instance.GetTargetAtIndex(0)
+            regression_calls = get_call_instructions(regression_target)
+            return regression_calls
+
         base_target = self.base_lldb_instance.GetTargetAtIndex(0)
-        regression_target = self.regression_lldb_instance.GetTargetAtIndex(0)
-
         base_calls = get_call_instructions(base_target)
+        regression_target = self.regression_lldb_instance.GetTargetAtIndex(0)
         regression_calls = get_call_instructions(regression_target)
-
         return { "base" : base_calls, "regressed" : regression_calls }
     
     def terminate(self):
