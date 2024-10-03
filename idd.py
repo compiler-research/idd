@@ -353,11 +353,11 @@ if __name__ == "__main__":
                 Debugger = GDBMiDebugger(ba, bs, ra, rs)
 
     elif comparator == 'lldb':
-        from debuggers.lldb.lldb_driver import LLDBDebugger
+        from debuggers.lldb.lldb_driver import LLDBParallelDebugger
 
         if ba == "" or ra == "":
             raise Exception("LLDB can only be used by launching executable and executable is not provided")
-        Debugger = LLDBDebugger(ba, ra)
+        Debugger = LLDBParallelDebugger(ba, ra)
     else:
         sys.exit("Invalid comparator set")
 
