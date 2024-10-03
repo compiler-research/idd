@@ -138,9 +138,9 @@ class Differ:
         """Generate comparison results for a same-tagged range."""
         for i in range(lo, hi):
             if tag == '-':
-                yield '%s [red] %s [/red] ' % (tag, x[i])
+                yield '%s [red] %s [/red]' % (tag, x[i])
             elif tag == '+':
-                yield '%s [green] %s [/green] ' % (tag, x[i])
+                yield '%s [green] %s [/green]' % (tag, x[i])
             else:
                 yield '%s %s' % (tag, x[i])
 
@@ -322,17 +322,10 @@ def reformat(tags, line):
     for i in range(0, len(tags)):
         if tags[i] == "^":
             temp_line += "[yellow bold underline]" + line[i] + "[/yellow bold underline]"
-            continue
-        elif tags[i] == "+":
+        else:
             temp_line += line[i]
-            continue
-        elif tags[i] == "-":
-            temp_line += line[i]
-            continue
-        
-        temp_line += line[i]
 
-    temp_line += line[-(len(line) - len(tags)):]
+    temp_line += line[len(tags):]
     return temp_line
 
 def _keep_original_ws(s, tag_s):
