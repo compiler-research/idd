@@ -1,6 +1,7 @@
 import logging
 import subprocess
 
+from driver import IDDParallelTerminate
 from pygdbmi.gdbcontroller import GdbController
 from pygdbmi.IoManager import IoManager
 from pygdbmi.constants import (
@@ -54,9 +55,6 @@ class IDDGdbController(GdbController):
         )
         return self.gdb_process.pid
 
-
-class IDDParallelTerminate:
-    pass
 
 
 class IDDParallelGdbController:

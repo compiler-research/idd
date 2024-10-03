@@ -3,6 +3,9 @@ from abc import ABCMeta, abstractmethod
 
 class Driver(metaclass=abc.ABCMeta):
     @abstractmethod
+    def get_state(self, target): raise NotImplementedError
+
+    @abstractmethod
     def run_single_command(self, command, target): raise NotImplementedError
 
     @abstractmethod
@@ -10,3 +13,7 @@ class Driver(metaclass=abc.ABCMeta):
     
     @abstractmethod
     def terminate(self): raise NotImplementedError
+
+
+class IDDParallelTerminate:
+    pass
