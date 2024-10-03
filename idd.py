@@ -2,6 +2,7 @@ import argparse
 import sys
 
 from textual import on
+from textual import events
 from textual.app import App, ComposeResult
 from textual.reactive import Reactive
 from textual.widgets import Input
@@ -50,6 +51,12 @@ class DiffDebug(App):
         super().__init__()
         self.disable_asm = disable_asm
         self.disable_registers = disable_registers
+        self.common_history = [""]
+        self.common_history_index = 0
+        self.base_history = [""]
+        self.base_history_index = 0
+        self.regressed_history = [""]
+        self.regressed_history_index = 0
 
     async def set_command_result(self, version) -> None:
         state = Debugger.get_state(version)
@@ -282,9 +289,20 @@ class DiffDebug(App):
                 self.diff_area1.append([self.parallel_command_bar.value])
                 self.diff_area2.append([self.parallel_command_bar.value])
 
-                await self.set_common_command_result(result)
+                # append to history
+                self.common_history.append(self.parallel_command_bar.value)
+                self.common_history_index = len(self.common_history)
+            
+            else:
+                # execute last command from history
+                result = Debugger.run_parallel_command(self.common_history[-1])
 
-                self.parallel_command_bar.value = ""
+                self.diff_area1.append([self.parallel_command_bar.value])
+                self.diff_area2.append([self.parallel_command_bar.value])
+
+            await self.set_common_command_result(result)
+
+            self.parallel_command_bar.value = ""
 
         elif event.control.id == 'base-command-bar':
             if self.base_command_bar.value != "":
@@ -292,9 +310,20 @@ class DiffDebug(App):
                 self.diff_area1.append([self.base_command_bar.value])
                 self.diff_area1.append(result)
 
-                await self.set_command_result("base")
+                # append to history
+                self.base_history.append(self.base_command_bar.value)
+                self.base_history_index = len(self.base_history)
+            
+            else:
+                # execute last command from history
+                result = Debugger.run_single_command(self.base_history[-1], "base")
+                
+                self.diff_area1.append([self.base_command_bar.value])
+                self.diff_area1.append(result)
 
-                self.base_command_bar.value = ""
+            await self.set_command_result("base")
+
+            self.base_command_bar.value = ""
 
         elif event.control.id == 'regressed-command-bar':
             if self.regressed_command_bar.value != "":
@@ -302,9 +331,51 @@ class DiffDebug(App):
                 self.diff_area2.append([self.regressed_command_bar.value])
                 self.diff_area2.append(result)
 
-                await self.set_command_result("regressed")
+                # append to history
+                self.regressed_history.append(self.regressed_command_bar.value)
+                self.regressed_history_index = len(self.regressed_history)
+            
+            else:
+                # execute last command from history
+                result = Debugger.run_single_command(self.regressed_history[-1], "regressed")
+                self.diff_area2.append([self.regressed_command_bar.value])
+                self.diff_area2.append(result)
 
-                self.regressed_command_bar.value = ""
+            await self.set_command_result("regressed")
+    
+            self.regressed_command_bar.value = ""
+
+    async def on_key(self, event: events.Key) -> None:
+        if self.focused.id == "parallel-command-bar":
+            if event.key == "up":
+                self.common_history_index = (self.common_history_index - 1) % len(self.common_history)
+            elif event.key == "down":
+                self.common_history_index = (self.common_history_index + 1) % len(self.common_history)
+            else:
+                return
+            
+            self.parallel_command_bar.value = self.common_history[self.common_history_index]
+
+        elif self.focused.id == "base-command-bar":
+            if event.key == "up":
+                self.base_history_index = (self.base_history_index - 1) % len(self.base_history)
+            elif event.key == "down":
+                self.base_history_index = (self.base_history_index + 1) % len(self.base_history)
+            else:
+                return
+            
+            self.base_command_bar.value = self.base_history[self.base_history_index]
+
+        elif self.focused.id == "regressed-command-bar":
+            if event.key == "up":
+                self.regressed_history_index = (self.regressed_history_index - 1) % len(self.regressed_history)
+            elif event.key == "down":
+                self.regressed_history_index = (self.regressed_history_index + 1) % len(self.regressed_history)
+            else:
+                return
+            
+            self.regressed_command_bar.value = self.regressed_history[self.regressed_history_index]
+
 
 if __name__ == "__main__":
     Debugger = None
