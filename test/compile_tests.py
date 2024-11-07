@@ -1,19 +1,20 @@
-#!/usr/bin/env python
-# coding: utf-8
+#!/usr/bin/env python3
 
-import glob
-import os
-from os import system
-root_tests_dir = '.'
+import subprocess
+from pathlib import Path
 
-for test_dir in os.listdir(root_tests_dir):
-    if os.path.isdir(os.path.join(root_tests_dir, test_dir)):
+root_tests_dir = Path(__file__).parent.resolve()
+prog = "g++"
+
+for test_dir in root_tests_dir.iterdir():
+    if test_dir.is_dir():
         print(test_dir)
-        if not os.path.exists("{test_dir}/a".format(test_dir = test_dir)):
-            os.makedirs("{test_dir}/a".format(test_dir = test_dir))
+        a_dir = test_dir / "a"
+        b_dir = test_dir / "b"
 
-        if not os.path.exists("{test_dir}/b".format(test_dir = test_dir)):
-            os.makedirs("{test_dir}/b".format(test_dir = test_dir))
+        a_dir.mkdir(exist_ok=True)
+        b_dir.mkdir(exist_ok=True)
 
-        system("g++ -DV1 -o {test_d}/a/program.out -xc++ -g {test_files}".format(test_d = test_dir, test_files = ' '.join(glob.glob(test_dir + '/*.c??'))))
-        system("g++ -DV2 -o {test_d}/b/program.out -xc++ -g {test_files}".format(test_d = test_dir, test_files = ' '.join(glob.glob(test_dir + '/*.c??'))))
+        test_files = list(test_dir.glob('*.c??'))
+        subprocess.run([prog, "-DV1", "-o", a_dir/"program.out", "-g", *test_files], check=True)
+        subprocess.run([prog, "-DV2", "-o", b_dir/"program.out", "-g", *test_files], check=True)
