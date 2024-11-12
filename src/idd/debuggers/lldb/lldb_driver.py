@@ -1,8 +1,8 @@
 import os
 import lldb
 
-from driver import Driver, IDDParallelTerminate
-from debuggers.lldb.lldb_extensions import *
+from idd.driver import Driver, IDDParallelTerminate
+from idd.debuggers.lldb.lldb_extensions import *
 from multiprocessing import Process, Pipe
 
 
