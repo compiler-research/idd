@@ -1,6 +1,6 @@
 from pygdbmi.gdbcontroller import GdbController
 from pprint import pprint
-from driver import Driver
+from idd.driver import Driver
 
 import io
 import time

@@ -1,10 +1,10 @@
 import os
 import json
 
-from debuggers.gdb.idd_gdb_controller import create_IDDGdbController, terminate_all_IDDGdbController
-from driver import Driver
+from idd.debuggers.gdb.idd_gdb_controller import create_IDDGdbController, terminate_all_IDDGdbController
+from idd.driver import Driver
 
-from debuggers.gdb.utils import parse_gdb_line
+from idd.debuggers.gdb.utils import parse_gdb_line
 
 base_response = []
 regressed_response = []

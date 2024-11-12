@@ -1,5 +1,4 @@
-import difflib
-from differ import Differ
+from idd.differ import Differ
 
 class DiffDriver:
     def get_diff(self, a, b, typ):

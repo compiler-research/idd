@@ -10,11 +10,11 @@ from textual.reactive import Reactive
 from textual.widgets import Input
 from textual.containers import Horizontal, Vertical
 
-from diff_driver import DiffDriver
+from idd.diff_driver import DiffDriver
 
-from ui.footer import Footer
-from ui.header import Header
-from ui.scrollable_area import TextScrollView
+from idd.ui.footer import Footer
+from idd.ui.header import Header
+from idd.ui.scrollable_area import TextScrollView
 
 
 class DiffDebug(App):
@@ -379,7 +379,7 @@ class DiffDebug(App):
             self.regressed_command_bar.value = self.regressed_history[self.regressed_history_index]
 
 
-if __name__ == "__main__":
+def main() -> None:
     Debugger = None
 
     parser = argparse.ArgumentParser(description='Diff Debug for simple debugging!')
@@ -407,7 +407,7 @@ if __name__ == "__main__":
     rs = ' '.join(args['regression_script_path']) if args["regression_script_path"] is not None else None
 
     if comparator == 'gdb':
-        from debuggers.gdb.gdb_mi_driver import GDBMiDebugger
+        from idd.debuggers.gdb.gdb_mi_driver import GDBMiDebugger
 
         if ba != "" and bpid is not None:
             raise Exception("Both executable and process ID given for base. This is not possible")
@@ -426,7 +426,7 @@ if __name__ == "__main__":
                 Debugger = GDBMiDebugger(ba, bs, ra, rs)
 
     elif comparator == 'lldb':
-        from debuggers.lldb.lldb_driver import LLDBParallelDebugger
+        from idd.debuggers.lldb.lldb_driver import LLDBParallelDebugger
 
         if ba == "" or ra == "":
             raise Exception("LLDB can only be used by launching executable and executable is not provided")
