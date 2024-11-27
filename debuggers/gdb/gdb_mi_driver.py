@@ -1,7 +1,7 @@
 import os
 import json
 
-from debuggers.gdb.idd_gdb_controller import create_IDDGdbController, terminate_all_IDDGdbController
+from debuggers.gdb.idd_gdb_controller import create_IDDGdbController, terminate_all_IDDGdbController, IDDGdbController
 from driver import Driver
 
 from debuggers.gdb.utils import parse_gdb_line
@@ -18,23 +18,10 @@ class GDBMiDebugger(Driver):
 
     def __init__(self, base_args, base_script_file_path, regression_args, regression_script_file_path,
                  base_pid=None, regression_pid=None):
-        self.base_gdb_instance = create_IDDGdbController(base_script_file_path)
-        self.regressed_gdb_instance = create_IDDGdbController(regression_script_file_path)
+        self.base_gdb_instance = create_IDDGdbController(base_args, base_pid, base_script_file_path)
+        self.regressed_gdb_instance = create_IDDGdbController(regression_args, regression_pid, regression_script_file_path)
 
         self.gdb_instances = { 'base': self.base_gdb_instance, 'regressed': self.regressed_gdb_instance }
-
-        if base_pid is None:
-            self.run_single_raw_command('file ' + base_args, 'base')
-        else:
-            self.run_single_raw_command('attach ' + base_pid, 'base')
-        
-        if regression_pid is None:
-            self.run_single_raw_command('file ' + regression_args, 'regressed')
-        else:
-            self.run_single_raw_command('attach ' + regression_pid, 'regressed')
-
-        dirname = os.path.dirname(__file__)
-        self.run_parallel_raw_command("source " + os.path.join(dirname, "gdb_commands.py"))
 
     def run_parallel_command(self, command):
         # start both execution in parallel

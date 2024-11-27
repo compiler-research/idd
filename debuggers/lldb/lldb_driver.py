@@ -21,36 +21,39 @@ class LLDBDebugger:
 
     lldb_instances = None
 
-    def __init__(self, args):
+    def __init__(self, exe="", pid=None):
         self.lldb_instance = lldb.SBDebugger.Create()
         self.lldb_instance.SetAsync(False)
         self.lldb_instance.SetUseColor(False)
-        
-        error = lldb.SBError()
-        target = self.lldb_instance.CreateTarget(args, "x86_64", "host", True, error)
-        if not error.Success():
-            raise Exception(error.GetCString())
 
         self.command_interpreter = self.lldb_instance.GetCommandInterpreter()
 
-        launch_info = lldb.SBLaunchInfo(None)
-        launch_info.SetExecutableFile (target.GetExecutable(), True)
+        if exe != "":
+            error = lldb.SBError()
+            target = self.lldb_instance.CreateTarget(exe, "x86_64", "host", True, error)
+            if not error.Success():
+                raise Exception(error.GetCString())
+
+            launch_info = lldb.SBLaunchInfo(None)
+            launch_info.SetExecutableFile (target.GetExecutable(), True)
+        elif pid is not None:
+            self.run_single_command("attach -p " + str(pid))
 
         dirname = os.path.dirname(__file__)
         self.run_single_command("command script import " + os.path.join(dirname, "lldb_commands.py"))
 
         self.is_initted = True
 
-    def run_single_command(self, command):
+    def run_single_command(self, command, *_):
         command_result = lldb.SBCommandReturnObject()
         self.command_interpreter.HandleCommand(command, command_result)
-        
-        if command_result.Succeeded():
-            return command_result.GetOutput()
-        else:
-            return command_result.GetError()
 
-    def get_state(self):
+        if command_result.Succeeded():
+            return command_result.GetOutput().split("\n")
+        else:
+            return command_result.GetError().split("\n")
+
+    def get_state(self, *_):
         return {
             'stack_frames': self.get_current_stack_frames(),
             'locals': self.get_current_local_vars(None),
@@ -68,7 +71,7 @@ class LLDBDebugger:
         target = self.lldb_instance.GetTargetAtIndex(0)
         args = get_args_as_list(target)
         return args
-    
+
     def get_current_local_vars(self, filters):
         target = self.lldb_instance.GetTargetAtIndex(0)
         target_locals = get_local_vars_as_list(target)
@@ -90,13 +93,13 @@ class LLDBDebugger:
         target = self.lldb_instance.GetTargetAtIndex(0)
         calls = get_call_instructions(target)
         return calls
-    
+
     def terminate(self):
-        pass
+        return
 
     @staticmethod
     def run(lldb_args, pipe):
-        lldb = LLDBDebugger(lldb_args)
+        lldb = LLDBDebugger(*lldb_args)
         while True:
             args, kwargs = pipe.recv()
             if isinstance(args, IDDParallelTerminate) or isinstance(kwargs, IDDParallelTerminate):
@@ -111,9 +114,9 @@ class LLDBDebugger:
 
 
 class LLDBParallelDebugger(Driver):
-    def __init__(self, base_args, regression_args):
-        self.base_pipe = create_LLDBDebugger_for_parallel(base_args)
-        self.regressed_pipe = create_LLDBDebugger_for_parallel(regression_args)
+    def __init__(self, base_args="", base_pid=None, regression_args="", regression_pid=None):
+        self.base_pipe = create_LLDBDebugger_for_parallel(base_args, base_pid)
+        self.regressed_pipe = create_LLDBDebugger_for_parallel(regression_args, regression_pid)
 
     def get_state(self, target=None):
         if target == "base":
@@ -134,18 +137,18 @@ class LLDBParallelDebugger(Driver):
     def run_single_command(self, command, target):
         if target == "base":
             self.base_pipe.send(((command,), {}))
-            return self.base_pipe.recv().split("\n")
+            return self.base_pipe.recv()
         if target == "regressed":
             self.regressed_pipe.send(((command,), {}))
-            return self.regressed_pipe.recv().split("\n")
+            return self.regressed_pipe.recv()
 
     def run_parallel_command(self, command):
         self.base_pipe.send(((command,), {}))
         self.regressed_pipe.send(((command,), {}))
 
         return {
-            "base": self.base_pipe.recv().split("\n"),
-            "regressed": self.regressed_pipe.recv().split("\n"),
+            "base": self.base_pipe.recv(),
+            "regressed": self.regressed_pipe.recv(),
         }
     
     def terminate(self):
@@ -158,7 +161,7 @@ def terminate_all_IDDGdbController():
     for process, _ in processes:
         process.join()
 
-def create_LLDBDebugger_for_parallel(args):
+def create_LLDBDebugger_for_parallel(*args):
     global processes
 
     parent_conn, child_conn = Pipe()

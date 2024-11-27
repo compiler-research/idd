@@ -1,7 +1,11 @@
+import os
 import logging
 import subprocess
+import json
 
 from driver import IDDParallelTerminate
+from debuggers.gdb.utils import parse_gdb_line
+
 from pygdbmi.gdbcontroller import GdbController
 from pygdbmi.IoManager import IoManager
 from pygdbmi.constants import (
@@ -19,9 +23,17 @@ logger = logging.getLogger(__name__)
 class IDDGdbController(GdbController):
     script_file_path = None
 
-    def __init__(self, script_file_path = None):
+    def __init__(self, base_args="", base_pid=None, script_file_path = None):
         self.script_file_path = script_file_path
         super().__init__( None, DEFAULT_TIME_TO_CHECK_FOR_ADDITIONAL_OUTPUT_SEC)
+        
+        if base_args != "":
+            self.run_single_command('file ' + base_args, 'base')
+        elif base_pid != None:
+            self.run_single_command('attach ' + base_pid, 'base')
+        
+        dirname = os.path.dirname(__file__)
+        self.run_single_command("source " + os.path.join(dirname, "gdb_commands.py"))
 
     def spawn_new_gdb_subprocess(self) -> int:
         if self.gdb_process:
@@ -54,6 +66,38 @@ class IDDGdbController(GdbController):
             self.time_to_check_for_additional_output_sec,
         )
         return self.gdb_process.pid
+    
+    def parse_command_output(self, raw_result):
+        response = []
+        for item in raw_result:
+            if item['type'] == 'console':
+                input_string = str(item['payload'])
+                processed_output = parse_gdb_line(input_string)
+                response.append(processed_output)
+        return response
+    
+    def parse_special_command_output(self, raw_result):
+        for item in raw_result:
+            if item['type'] == 'console':
+                input_string = str(item['payload'])
+                processed_output = parse_gdb_line(input_string)
+                try:
+                    parsed_dict = json.loads(processed_output)
+                except json.JSONDecodeError:
+                    parsed_dict = processed_output
+
+                if parsed_dict:
+                    return parsed_dict
+
+    def get_state(self, *_):
+        return self.parse_special_command_output(self.write("pstate"))
+
+
+    def run_single_command(self, command, *_):
+        return self.parse_command_output(self.write(command))
+    
+    def terminate(self):
+        return
 
 
 
