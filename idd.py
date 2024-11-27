@@ -49,8 +49,9 @@ class DiffDebug(App):
     base_command_bar = Input(placeholder="Enter your base command here...", name="base_command_bar", id="base-command-bar")
     regressed_command_bar = Input(placeholder="Enter your regression command here...", name="regressed_command_bar", id="regressed-command-bar")
 
-    def __init__(self, disable_asm=False, disable_registers=False):
+    def __init__(self, disable_asm=False, disable_registers=False, only_base=False):
         super().__init__()
+        self.only_base = only_base
         self.disable_asm = disable_asm
         self.disable_registers = disable_registers
         self.common_history = [""]
@@ -216,6 +217,33 @@ class DiffDebug(App):
 
     def compose(self) -> ComposeResult:
         """Compose the layout of the application."""
+        if self.only_base:
+            with Vertical():
+                yield Header()
+                with Horizontal(classes="base_only_row1"):
+                    yield self.diff_frames1
+                with Horizontal(classes="base_only_row2"):
+                    with Horizontal():
+                        yield self.diff_locals1
+                        yield self.diff_args1
+                    if not self.disable_registers and not self.disable_asm:
+                        with Vertical():
+                            with Horizontal():
+                                yield self.diff_reg1
+                            with Horizontal():
+                                yield self.diff_asm1
+                    elif not self.disable_asm:
+                        with Vertical():
+                                yield self.diff_asm1
+                    elif not self.disable_registers:
+                        with Vertical():
+                                yield self.diff_reg1
+                with Horizontal(classes="base_only_row3"):
+                    yield self.diff_area1
+                with Horizontal(classes="base_only_row4"):
+                    yield self.base_command_bar
+            return
+
         with Vertical():
             yield Header()
 
@@ -307,6 +335,9 @@ class DiffDebug(App):
             self.parallel_command_bar.value = ""
 
         elif event.control.id == 'base-command-bar':
+            if self.only_base and (self.base_command_bar.value == "exit" or self.base_command_bar.value == "quit"):
+                Debugger.terminate()
+                exit(0)
             if self.base_command_bar.value != "":
                 result = Debugger.run_single_command(self.base_command_bar.value, "base")
                 self.diff_area1.append([self.base_command_bar.value])
@@ -348,6 +379,9 @@ class DiffDebug(App):
             self.regressed_command_bar.value = ""
 
     async def on_key(self, event: events.Key) -> None:
+        if self.focused is None:
+            return
+
         if self.focused.id == "parallel-command-bar":
             if event.key == "up":
                 self.common_history_index = (self.common_history_index - 1) % len(self.common_history)
@@ -383,12 +417,16 @@ if __name__ == "__main__":
     Debugger = None
 
     parser = argparse.ArgumentParser(description='Diff Debug for simple debugging!')
+
+    base_arg_group = parser.add_mutually_exclusive_group()
+    regressed_arg_group = parser.add_mutually_exclusive_group()
+
     parser.add_argument('-c','--comparator', help='Choose a comparator', default='gdb')
-    parser.add_argument('-ba','--base-args', help='Base executable args', default="", nargs='+')
-    parser.add_argument('-bpid','--base-processid', help='Base process ID', default=None)
+    base_arg_group.add_argument('-ba','--base-args', help='Base executable args', default="", nargs='+')
+    base_arg_group.add_argument('-bpid','--base-processid', help='Base process ID', default=None)
     parser.add_argument('-bs','--base-script-path', help='Base preliminary script file path', default=None, nargs='+')
-    parser.add_argument('-ra','--regression-args', help='Regression executable args', default="", nargs='+')
-    parser.add_argument('-rpid','--regression-processid', help='Regression process ID', default=None)
+    regressed_arg_group.add_argument('-ra','--regression-args', help='Regression executable args', default="", nargs='+')
+    regressed_arg_group.add_argument('-rpid','--regression-processid', help='Regression process ID', default=None)
     parser.add_argument('-rs','--regression-script-path', help='Regression preliminary script file path', default=None, nargs='+')
     parser.add_argument('-r','--remote_host', help='The host of the remote server', default='localhost')
     parser.add_argument('-p','--platform', help='The platform of the remote server: macosx, linux', default='linux')
@@ -405,36 +443,29 @@ if __name__ == "__main__":
     ra = ' '.join(args['regression_args'])
     rpid = args['regression_processid']
     rs = ' '.join(args['regression_script_path']) if args["regression_script_path"] is not None else None
+    base_only = False
 
     if comparator == 'gdb':
-        from debuggers.gdb.gdb_mi_driver import GDBMiDebugger
+        from debuggers.gdb.gdb_mi_driver import GDBMiDebugger, IDDGdbController
 
-        if ba != "" and bpid is not None:
-            raise Exception("Both executable and process ID given for base. This is not possible")
-        if ra != "" and rpid is not None:
-            raise Exception("Both executable and process ID given for regression. This is not possible")
-        
-        if ba == "":
-            if ra == "":
-                Debugger = GDBMiDebugger(ba, bs, ra, rs, base_pid=bpid, regression_pid=rpid)
-            else:
-                Debugger = GDBMiDebugger(ba, bs, ra, rs, base_pid=bpid)
+        if ra == "" and rpid is None:
+            Debugger = IDDGdbController(ba, bpid, bs)
+            base_only = True
         else:
-            if ra == "":
-                Debugger = GDBMiDebugger(ba, bs, ra, rs, regression_pid=rpid)
-            else:
-                Debugger = GDBMiDebugger(ba, bs, ra, rs)
+            Debugger = GDBMiDebugger(ba, bs, ra, rs, base_pid=bpid, regression_pid=rpid)
 
     elif comparator == 'lldb':
-        from debuggers.lldb.lldb_driver import LLDBParallelDebugger
+        from debuggers.lldb.lldb_driver import LLDBParallelDebugger, LLDBDebugger
 
-        if ba == "" or ra == "":
-            raise Exception("LLDB can only be used by launching executable and executable is not provided")
-        Debugger = LLDBParallelDebugger(ba, ra)
+        if ra == "" and rpid is None:
+            Debugger = LLDBDebugger(ba, bpid)
+            base_only = True
+        else:
+            Debugger = LLDBParallelDebugger(ba, bpid, ra, rpid)
     else:
         sys.exit("Invalid comparator set")
 
     disable_registers = args["disable_registers"]
     disable_assembly = args["disable_assembly"]
-    dd = DiffDebug(disable_assembly, disable_registers)
+    dd = DiffDebug(disable_assembly, disable_registers, base_only)
     dd.run()
