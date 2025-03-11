@@ -12,7 +12,7 @@ IDD loads two versions of the same application. The first one is the base versio
 ## :zap: Usage
 Write about how to use this project.
 
-`python3 idd.py -c gdb -ba <path to base executable> -ra <path to regressed executable>`
+`python -m idd -c gdb -ba <path to base executable> -ra <path to regressed executable>`
 
 ### :electric_plug: Installation
 - Steps on how to install this project on Ubuntu 22.04
@@ -27,7 +27,7 @@ $ source iddenv/bin/activate
 -- Installing required packages:
 
 ```
-$ pip3 install textual textual_inputs pygdbmi
+$ pip install -e.
 ```
 
 ## :cherry_blossom: Community

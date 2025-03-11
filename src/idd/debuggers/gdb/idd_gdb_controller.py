@@ -3,8 +3,8 @@ import logging
 import subprocess
 import json
 
-from driver import IDDParallelTerminate
-from debuggers.gdb.utils import parse_gdb_line
+from idd.driver import IDDParallelTerminate
+from idd.debuggers.gdb.utils import parse_gdb_line
 
 from pygdbmi.gdbcontroller import GdbController
 from pygdbmi.IoManager import IoManager

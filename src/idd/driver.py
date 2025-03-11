@@ -1,5 +1,5 @@
 import abc
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 
 class Driver(metaclass=abc.ABCMeta):
     @abstractmethod
