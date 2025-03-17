@@ -67,9 +67,9 @@ class DiffDebug(App):
         await self.set_pframes_result(state, version)
         await self.set_pargs_result(state, version)
         await self.set_plocals_result(state, version)
-        if not disable_assembly:
+        if not self.disable_asm:
             await self.set_pasm_result(state, version)
-        if not disable_registers:
+        if not self.disable_registers:
             await self.set_pregisters_result(state, version)
 
     async def set_common_command_result(self, command_result) -> None:
@@ -84,9 +84,9 @@ class DiffDebug(App):
             await self.set_pframes_command_result(state)
             await self.set_pargs_command_result(state)
             await self.set_plocals_command_result(state)
-            if not disable_assembly:
+            if not self.disable_asm:
                 await self.set_pasm_command_result(state)
-            if not disable_registers:
+            if not self.disable_registers:
                 await self.set_pregisters_command_result(state)
 
             #calls = Debugger.get_current_calls()
@@ -413,8 +413,9 @@ class DiffDebug(App):
             self.regressed_command_bar.value = self.regressed_history[self.regressed_history_index]
 
 
+Debugger = None
 def main() -> None:
-    Debugger = None
+    global Debugger
 
     parser = argparse.ArgumentParser(description='Diff Debug for simple debugging!')
 
