@@ -15,10 +15,6 @@ jobs:
   publish:
     needs: [dist]
     environment: pypi
-    permissions:
-      id-token: write
-      attestations: write
-      contents: read
     runs-on: ubuntu-latest
 
     steps:
@@ -28,7 +24,7 @@ jobs:
           path: dist
 
       - name: Generate artifact attestation for sdist and wheel
-        uses: actions/attest-build-provenance@v2.2.3
+        uses: actions/attest-build-provenance@v2
         with:
           subject-path: "dist/*"
 
