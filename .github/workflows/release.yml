@@ -15,6 +15,9 @@ jobs:
   publish:
     needs: [dist]
     environment: pypi
+    permissions:
+      id-token: write
+      attestations: write
     runs-on: ubuntu-latest
 
     steps:
