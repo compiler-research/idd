@@ -3,7 +3,8 @@ import lldb
 
 from idd.driver import Driver, IDDParallelTerminate
 from idd.debuggers.lldb.lldb_extensions import *
-from multiprocessing import Process, Pipe
+from multiprocessing import Pipe
+import pty
 
 
 processes = []
@@ -108,6 +109,7 @@ class LLDBDebugger:
                 res = lldb.get_state()
                 pipe.send(res)
             else:
+                print(f"IDD logs: {os.getpid()}: {args}") # FIXME: remove before merging
                 res = lldb.run_single_command(*args, **kwargs)
                 pipe.send(res)
 
@@ -115,8 +117,8 @@ class LLDBDebugger:
 
 class LLDBParallelDebugger(Driver):
     def __init__(self, base_args="", base_pid=None, regression_args="", regression_pid=None):
-        self.base_pipe = create_LLDBDebugger_for_parallel(base_args, base_pid)
-        self.regressed_pipe = create_LLDBDebugger_for_parallel(regression_args, regression_pid)
+        self.base_pipe, self.base_fd = create_LLDBDebugger_for_parallel(base_args, base_pid)
+        self.regressed_pipe, self.regressed_fd = create_LLDBDebugger_for_parallel(regression_args, regression_pid)
 
     def get_state(self, target=None):
         if target == "base":
@@ -146,26 +148,50 @@ class LLDBParallelDebugger(Driver):
         self.base_pipe.send(((command,), {}))
         self.regressed_pipe.send(((command,), {}))
 
-        return {
+        result = {
             "base": self.base_pipe.recv(),
             "regressed": self.regressed_pipe.recv(),
         }
-    
+
+        base_str, regression_str = self.process_tty()
+        if base_str or regression_str:
+            result["base"].append(base_str)
+            result["regressed"].append(regression_str)
+
+        return result
+
     def terminate(self):
         terminate_all_IDDGdbController()
 
+    def process_tty(self):
+        os.set_blocking(self.base_fd, False)
+        try:
+            base = os.read(self.base_fd, 1024 * 1024 * 10).decode()
+        except BlockingIOError:
+            base = ""
+        
+        os.set_blocking(self.regressed_fd, False)
+        try:
+            regression = os.read(self.regressed_fd, 1024 * 1024 * 10).decode()
+        except BlockingIOError:
+            regression = ""
+        
+        return base, regression
+
 
 def terminate_all_IDDGdbController():
-    for _, pipe in processes:
+    for _, pipe, _ in processes:
         pipe.send((IDDParallelTerminate(), IDDParallelTerminate()))
-    for process, _ in processes:
-        process.join()
+    # for process, _, _ in processes:
+    #     os.waitpid(process, 0) # XXX: waitpid does not return?
 
 def create_LLDBDebugger_for_parallel(*args):
     global processes
 
     parent_conn, child_conn = Pipe()
-    process = Process(target=LLDBDebugger.run, args=(args, child_conn))
-    processes.append((process, parent_conn))
-    process.start()
-    return parent_conn
+    pid, fd = pty.fork()
+    if pid == 0:
+        LLDBDebugger.run(args, child_conn)
+    else:
+        processes.append((pid, parent_conn, fd))
+    return parent_conn, fd
