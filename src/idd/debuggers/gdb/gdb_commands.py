@@ -49,7 +49,7 @@ class PrintState (gdb.Command):
     # leave only the starting and ending quotes
     # ensures correct parsing of the stack frames as
     stack_frames = command_result.split('\n')
-    trimmed_stack_frames = [self.trim_quotes(frame) for frame in stack_frames]
+    #trimmed_stack_frames = [self.trim_quotes(frame) for frame in stack_frames]
     result['stack_frames'] = stack_frames
 
     frame = gdb.selected_frame()

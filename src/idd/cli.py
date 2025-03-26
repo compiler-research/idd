@@ -470,3 +470,6 @@ def main() -> None:
     disable_assembly = args["disable_assembly"]
     dd = DiffDebug(disable_assembly, disable_registers, base_only)
     dd.run()
+
+if __name__ == "__main__":
+    main()
