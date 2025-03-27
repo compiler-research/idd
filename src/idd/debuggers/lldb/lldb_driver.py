@@ -30,12 +30,12 @@ class LLDBDebugger:
 
         if exe != "":
             error = lldb.SBError()
-            target = self.lldb_instance.CreateTarget(exe, "x86_64", "host", True, error)
+            self.target = self.lldb_instance.CreateTarget(exe, "x86_64", "host", True, error)
             if not error.Success():
                 raise Exception(error.GetCString())
 
             launch_info = lldb.SBLaunchInfo(None)
-            launch_info.SetExecutableFile (target.GetExecutable(), True)
+            launch_info.SetExecutableFile(self.target.GetExecutable(), True)
         elif pid is not None:
             self.run_single_command("attach -p " + str(pid))
 
@@ -109,6 +109,12 @@ class LLDBDebugger:
                 pipe.send(res)
             else:
                 res = lldb.run_single_command(*args, **kwargs)
+                stdout = lldb.target.GetProcess().GetSTDOUT(1024 * 1024 * 10)
+                if stdout:
+                    res.extend(stdout.split("\n"))
+                stderr = lldb.target.GetProcess().GetSTDERR(1024 * 1024 * 10)
+                if stderr:
+                    res.extend(stderr.split("\n"))
                 pipe.send(res)
 
 
