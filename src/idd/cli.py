@@ -31,6 +31,10 @@ class DiffDebug(App):
 
     diff_area1 = TextScrollView(title="Base Diff", component_id="diff-area1")
     diff_area2 = TextScrollView(title="Regression Diff", component_id = "diff-area2")
+    diff_stdout1 = TextScrollView(title="Base stdout", component_id="diff-stdout")
+    diff_stdout2 = TextScrollView(title="Regression stdout", component_id = "diff-stdout2")
+    diff_stdin1 = TextScrollView(title="Base stdin", component_id="diff-stdin1")
+    diff_stdin2 = TextScrollView(title="Regression stdin", component_id = "diff-stdin2")
     diff_frames1 = TextScrollView(title="Base Stackframe", component_id = "diff-frames1")
     diff_frames2 = TextScrollView(title="Regression Stackframe", component_id = "diff-frames2")
     diff_locals1 = TextScrollView(title="Base Locals", component_id = "diff-locals1")
@@ -300,6 +304,14 @@ class DiffDebug(App):
 
             with Horizontal(classes="row5"):
                 yield self.parallel_command_bar
+
+            with Horizontal(classes="row6"):
+                yield self.diff_stdout1
+                yield self.diff_stdout2
+
+            with Horizontal(classes="row7"):
+                yield self.diff_stdin1
+                yield self.diff_stdin2
 
             self.parallel_command_bar.focus()
 
