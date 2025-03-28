@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 class IDDGdbController(GdbController):
     script_file_path = None
-    buffer = []
+    buffer = ""
 
     def __init__(self, base_args="", base_pid=None, script_file_path=None):
         self.script_file_path = script_file_path
@@ -72,12 +72,13 @@ class IDDGdbController(GdbController):
                 self.buffer += new_data  # Append new data to buffer
 
                 if "\n" in self.buffer:
-                    lines = self.buffer #.split("\n")
+                    lines = self.buffer.split("\n")
                     self.buffer = lines[-1]  # Keep any incomplete line in the buffer
                     return "\n".join(lines[:-1])  # Return complete lines
             except OSError:
                 return None
         return None
+
 
 
     def terminate(self):
