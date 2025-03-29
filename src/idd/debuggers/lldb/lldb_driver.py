@@ -12,6 +12,12 @@ processes = []
 class LLDBGetState:
     pass
 
+
+class LLDBStdin:
+    def __init__(self, text: str):
+        self.text = text
+
+
 class LLDBDebugger:
     is_initted = False
 
@@ -30,12 +36,12 @@ class LLDBDebugger:
 
         if exe != "":
             error = lldb.SBError()
-            target = self.lldb_instance.CreateTarget(exe, "x86_64", "host", True, error)
+            self.target = self.lldb_instance.CreateTarget(exe, "x86_64", "host", True, error)
             if not error.Success():
                 raise Exception(error.GetCString())
 
             launch_info = lldb.SBLaunchInfo(None)
-            launch_info.SetExecutableFile (target.GetExecutable(), True)
+            launch_info.SetExecutableFile(self.target.GetExecutable(), True)
         elif pid is not None:
             self.run_single_command("attach -p " + str(pid))
 
@@ -93,6 +99,9 @@ class LLDBDebugger:
         target = self.lldb_instance.GetTargetAtIndex(0)
         calls = get_call_instructions(target)
         return calls
+    
+    def insert_stdin(self, text: str):
+        self.target.GetProcess().PutSTDIN(text)
 
     def terminate(self):
         return
@@ -107,8 +116,16 @@ class LLDBDebugger:
             if isinstance(args, LLDBGetState) or isinstance(kwargs, LLDBGetState):
                 res = lldb.get_state()
                 pipe.send(res)
+            elif isinstance(args, LLDBStdin):
+                lldb.insert_stdin(args.text)
             else:
                 res = lldb.run_single_command(*args, **kwargs)
+                stdout = lldb.target.GetProcess().GetSTDOUT(1024 * 1024 * 10)
+                if stdout:
+                    res.extend(stdout.split("\n"))
+                stderr = lldb.target.GetProcess().GetSTDERR(1024 * 1024 * 10)
+                if stderr:
+                    res.extend(stderr.split("\n"))
                 pipe.send(res)
 
 
@@ -150,6 +167,18 @@ class LLDBParallelDebugger(Driver):
             "base": self.base_pipe.recv(),
             "regressed": self.regressed_pipe.recv(),
         }
+    
+    def insert_stdin(self, text: str):
+        text = LLDBStdin(text)
+        self.base_pipe.send((text, text))
+        self.regressed_pipe.send((text, text))
+    
+    def insert_stdin_single(self, text: str, target: str):
+        text = LLDBStdin(text)
+        if target == "base":
+            self.base_pipe.send((text, text))
+        if target == "regressed":
+            self.regressed_pipe.send((text, text))
     
     def terminate(self):
         terminate_all_IDDGdbController()
