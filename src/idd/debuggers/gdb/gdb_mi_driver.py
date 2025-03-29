@@ -1,13 +1,17 @@
 import os
 import json
+import logging, time
 
-from idd.debuggers.gdb.idd_gdb_controller import create_IDDGdbController, terminate_all_IDDGdbController, IDDGdbController
+from idd.debuggers.gdb.idd_gdb_controller import IDDGdbController
 from idd.driver import Driver
 
 from idd.debuggers.gdb.utils import parse_gdb_line
 
 base_response = []
 regressed_response = []
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 class GDBMiDebugger(Driver):
     base_gdb_instance = None
@@ -18,43 +22,82 @@ class GDBMiDebugger(Driver):
 
     def __init__(self, base_args, base_script_file_path, regression_args, regression_script_file_path,
                  base_pid=None, regression_pid=None):
-        self.base_gdb_instance = create_IDDGdbController(base_args, base_pid, base_script_file_path)
-        self.regressed_gdb_instance = create_IDDGdbController(regression_args, regression_pid, regression_script_file_path)
+        self.base_gdb_instance = IDDGdbController(base_args, base_pid, base_script_file_path)
+        self.regressed_gdb_instance = IDDGdbController(regression_args, regression_pid, regression_script_file_path)
 
         self.gdb_instances = { 'base': self.base_gdb_instance, 'regressed': self.regressed_gdb_instance }
 
-    def run_parallel_command(self, command):
-        # start both execution in parallel
-        self.base_gdb_instance.send(((" {command}\n".format(command = command),), {"timeout_sec": 60}))
-        self.regressed_gdb_instance.send(((" {command}\n".format(command = command),), {"timeout_sec": 60}))
-        
-        # wait till base is done
-        raw_result = self.base_gdb_instance.recv()
-        # parse output (base)
-        base_response = self.parse_command_output(raw_result)
-        
-        # wait till regression is done
-        raw_result = self.regressed_gdb_instance.recv()
-        # parse output regression
-        regressed_response = self.parse_command_output(raw_result)
+        dirname = os.path.dirname(__file__)
+        self.run_parallel_command("source " + os.path.join(dirname, "gdb_commands.py"))
 
-        return { "base": base_response, "regressed": regressed_response }
+    def run_parallel_command(self, command):
+        """Executes a GDB command on both instances in parallel with proper handling."""
+        logger.info(f"Running parallel command: {command}")
+
+        # Send command to both GDB instances
+        self.base_gdb_instance.write(command)
+        time.sleep(0.4)  # Prevent overload
+        self.regressed_gdb_instance.write(command)
+
+        # Read outputs with crash handling
+        base_result = self.base_gdb_instance.read()
+        time.sleep(0.4)  # Prevent overload
+        regressed_result = self.regressed_gdb_instance.read()
+
+        if not base_result:
+            logger.warning("Base GDB instance may have crashed.")
+            # self.base_gdb_instance.handle_gdb_crash()
+
+        if not regressed_result:
+            logger.warning("Regressed GDB instance may have crashed.")
+            # self.regressed_gdb_instance.handle_gdb_crash()
+
+        return {
+            "base": self.parse_command_output(base_result),
+            "regressed": self.parse_command_output(regressed_result)
+        }
+
 
     def parse_command_output(self, raw_result):
+        """Parses raw GDB output from PTY into structured data."""
         response = []
-        for item in raw_result:
-            if item['type'] == 'console':
-                input_string = str(item['payload'])
-                processed_output = parse_gdb_line(input_string)
-                response.append(processed_output)
+
+        if not raw_result:
+            return response  # Return an empty list if no output
+
+        # Split into lines and process each line
+        lines = raw_result.strip().split("\r\n")
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue  # Ignore empty lines
+
+            # Handle GDB prompts separately (e.g., interactive confirmations)
+            if line.endswith("(y or n)?") or line.endswith("[y/n]"):
+                logger.warning(f"GDB is waiting for user input: {line}")
+                user_input = input("GDB Prompt detected. Please enter response (y/n): ").strip()
+                self.write(user_input)  # Send user response back to GDB
+                continue  # Skip further processing of this prompt
+
+            # Process normal GDB output
+            processed_output = parse_gdb_line(line)
+            response.append(processed_output)
+
         return response
+        #return lines
     
     def run_single_command(self, command, version):
         global base_response
         global regressed_response
-        
-        self.gdb_instances[version].send(((" {command}\n".format(command = command),), {"timeout_sec": 60}))
-        raw_result = self.gdb_instances[version].recv()
+
+        try:
+            self.gdb_instances[version].write(((" {command}\n".format(command = command),), {"timeout_sec": 60}))
+            raw_result = self.gdb_instances[version].recv()
+
+        except Exception as e:
+            logger.exception(f"Error executing GDB command: {command}")
+            # self.handle_gdb_crash()
+            return []
 
         return self.parse_command_output(raw_result)
 
@@ -62,38 +105,56 @@ class GDBMiDebugger(Driver):
         global base_response
         global regressed_response
 
-        self.gdb_instances[version].send(((" {command}\n".format(command = command),), {"timeout_sec": 60}))
-        raw_result = self.gdb_instances[version].recv()
+        try:
+            self.gdb_instances[version].write(((" {command}\n".format(command = command),), {"timeout_sec": 60}))
+            raw_result = self.gdb_instances[version].recv()
+        except Exception as e:
+            logger.exception(f"Error executing GDB command: {command}")
+            self.handle_gdb_crash()
+            return []
 
         return self.parse_special_command_output(raw_result)
 
     def parse_special_command_output(self, raw_result):
-        for item in raw_result:
-            if item['type'] == 'console':
-                input_string = str(item['payload'])
-                processed_output = parse_gdb_line(input_string)
-                try:
-                    parsed_dict = json.loads(processed_output)
-                except json.JSONDecodeError:
-                    parsed_dict = processed_output
+        response = []
 
-                if parsed_dict:
-                    return parsed_dict
+        if not raw_result:
+            return response  # Return an empty list if no output
+
+        # Split into lines and process each line
+        lines = raw_result.strip().split("\r\n")
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue  # Ignore empty lines
+
+            # Handle GDB prompts separately (e.g., interactive confirmations)
+            if line.endswith("(y or n)?") or line.endswith("[y/n]"):
+                logger.warning(f"GDB is waiting for user input: {line}")
+                user_input = input("GDB Prompt detected. Please enter response (y/n): ").strip()
+                self.write(user_input)  # Send user response back to GDB
+                continue  # Skip further processing of this prompt
+
+            # Process normal GDB output
+            processed_output = parse_gdb_line(line)
+            response.append(processed_output)
+
+        return response
     
     def get_state(self, version=None):
         if version is not None:
             return self.run_single_special_command("pstate", version)
         
         # get base and regression state
-        self.base_gdb_instance.send(((" {command}\n".format(command = "pstate"),), {"timeout_sec": 60}))
-        self.regressed_gdb_instance.send(((" {command}\n".format(command = "pstate"),), {"timeout_sec": 60}))
+        self.base_gdb_instance.write((" {command}\n".format(command = "pstate")))
+        self.regressed_gdb_instance.write((" {command}\n".format(command = "pstate")))
 
         # wait till base is done
-        raw_result = self.base_gdb_instance.recv()
+        raw_result = self.base_gdb_instance.read()
         base_state = self.parse_special_command_output(raw_result)
         
         # wait till regression is done
-        raw_result = self.regressed_gdb_instance.recv()
+        raw_result = self.regressed_gdb_instance.read()
         regression_state = self.parse_special_command_output(raw_result)
 
         return { "base" : base_state, "regressed" : regression_state }
@@ -129,8 +190,8 @@ class GDBMiDebugger(Driver):
         return { "base" : base_stack_frame, "regressed" : regression_stack_frame }
 
     def run_parallel_raw_command(self, command):
-        self.base_gdb_instance.send((("{command}\n".format(command = command),), {"timeout_sec": 60}))
-        self.regressed_gdb_instance.send((("{command}\n".format(command = command),), {"timeout_sec": 60}))
+        self.base_gdb_instance.write((("{command}\n".format(command = command),), {"timeout_sec": 60}))
+        self.regressed_gdb_instance.write((("{command}\n".format(command = command),), {"timeout_sec": 60}))
 
         raw_result = self.base_gdb_instance.recv()
         base_result = str(self.parse_raw_command_output(raw_result))
@@ -146,9 +207,11 @@ class GDBMiDebugger(Driver):
         return result
 
     def run_single_raw_command(self, command, version):
-        self.gdb_instances[version].send((("{command}\n".format(command = command),), {"timeout_sec": 60}))
+        self.gdb_instances[version].write((("{command}\n".format(command = command),), {"timeout_sec": 60}))
         raw_result = self.gdb_instances[version].recv()
         return self.parse_raw_command_output(raw_result)
 
     def terminate(self):
-        terminate_all_IDDGdbController()
+        print("Terminating GDB instances")
+        self.base_gdb_instance.terminate()
+        self.regressed_gdb_instance.terminate()

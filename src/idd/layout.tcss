@@ -8,7 +8,7 @@ TextScrollView {
 }
 
 .row1 {
-    height: 20%;
+    height: 10%;
 }
 
 .row2 {
@@ -23,8 +23,12 @@ TextScrollView {
     height: 5%;
 }
 
+.row6, .row7 {
+    height: 10%;
+}
+
 .row4 {
-    height: 40%;
+    height: 30%;
 }
 
 .base_only_row1 {
