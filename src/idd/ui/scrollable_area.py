@@ -36,15 +36,12 @@ class TextScrollView(RichLog):
         if component_id:
             self.id = component_id
         self._hover_start = 0
-        self._content = []
 
     def append(self, lines: list[str]):
-        self._content.extend(lines)
         self.write("\n".join(lines))
 
     def text(self, lines: list[str]):
         self.clear()
-        self._content = lines.copy()
         self.append(lines)
         
     def _get_terminal_type(self):
@@ -88,13 +85,3 @@ class TextScrollView(RichLog):
         if hasattr(self, '_clicked'):
             self._clicked = False
     
-    def export_content(self, filename=None) -> str:
-        """Export content to a file or return it as a string."""
-        text = "\n".join(self._content)
-        if filename and text:
-            try:
-                with open(filename, "w") as f:
-                    f.write(text)
-            except Exception as e:
-                print(f"Error saving to {filename}: {e}")
-        return text
