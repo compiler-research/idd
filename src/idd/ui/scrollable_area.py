@@ -4,7 +4,6 @@ import time
 from textual.widgets import RichLog
 from textual import events
 from textual.reactive import reactive
-import time
 
 
 class TextScrollView(RichLog):
