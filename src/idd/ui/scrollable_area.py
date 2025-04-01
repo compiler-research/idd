@@ -14,8 +14,7 @@ class TextScrollView(RichLog):
     DEFAULT_CSS = """
     TextScrollView {
         height: 100%;
-        scrollbar-size: 1 1;
-        border: solid green;
+        scrollbar-size: 1 1;  
     }
     """
 
