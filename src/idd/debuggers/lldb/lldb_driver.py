@@ -3,6 +3,7 @@ import lldb
 
 from idd.driver import Driver, IDDParallelTerminate
 from idd.debuggers.lldb.lldb_extensions import *
+from idd.debuggers.lldb.lldb_io import IOManager, ParallelFlag
 from multiprocessing import Process, Pipe
 from threading import Thread
 
@@ -222,10 +223,13 @@ class LLDBParallelDebugger(Driver):
 
 class LLDBAsyncDebugger(Driver):
     def __init__(self, fileio_base, fileio_regression, base_args="", base_pid=None, regression_args="", regression_pid=None):
-        self.base_pipe = LLDBDebugger(fileio_base, base_args, base_pid)
-        self.regressed_pipe = LLDBDebugger(fileio_regression, regression_args, regression_pid)
+        self.is_parallel = ParallelFlag()
+        self.io_manager = IOManager(fileio_base, fileio_regression, self.is_parallel)
+        self.base_pipe = LLDBDebugger(self.io_manager.get_base_file(), base_args, base_pid)
+        self.regressed_pipe = LLDBDebugger(self.io_manager.get_regression_file(), regression_args, regression_pid)
 
     def get_state(self, target=None):
+        self.is_parallel.is_parallel = target is None
         if target == "base":
             return self.base_pipe.get_state()
         if target == "regressed":
@@ -237,22 +241,26 @@ class LLDBAsyncDebugger(Driver):
         }
 
     def run_single_command(self, command, target):
+        self.is_parallel.is_parallel = False
         if target == "base":
             return self.base_pipe.run_single_command(command)
         if target == "regressed":
             return self.regressed_pipe.run_single_command(command)
 
     def run_parallel_command(self, command):
+        self.is_parallel.is_parallel = True
         return {
             "base": self.base_pipe.run_single_command(command),
             "regressed": self.regressed_pipe.run_single_command(command)
             }
     
     def insert_stdin(self, text: str):
+        self.is_parallel.is_parallel = True
         self.base_pipe.insert_stdin(text)
         self.regressed_pipe.insert_stdin(text)
     
     def insert_stdin_single(self, text: str, target: str):
+        self.is_parallel.is_parallel = False
         if target == "base":
             self.base_pipe.insert_stdin(text)
         if target == "regressed":

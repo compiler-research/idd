@@ -15,6 +15,7 @@ from idd.diff_driver import DiffDriver
 from idd.ui.footer import Footer
 from idd.ui.header import Header
 from idd.ui.scrollable_area import TextScrollView
+from idd.debuggers.lldb.lldb_io import lock
 
 
 class DiffDebug(App):
@@ -93,11 +94,12 @@ class DiffDebug(App):
 
     async def compare_contents(self, raw_base_contents, raw_regression_contents):
         if raw_base_contents != '' and raw_regression_contents != '':
-            diff1 = self.diff_driver.get_diff(raw_base_contents, raw_regression_contents, "base")
-            self.diff_area1.append(diff1)
+            with lock:
+                diff1 = self.diff_driver.get_diff(raw_base_contents, raw_regression_contents, "base")
+                self.diff_area1.append(diff1)
 
-            diff2 = self.diff_driver.get_diff(raw_regression_contents, raw_base_contents, "regressed")
-            self.diff_area2.append(diff2)
+                diff2 = self.diff_driver.get_diff(raw_regression_contents, raw_base_contents, "regressed")
+                self.diff_area2.append(diff2)
     
     async def set_pframes_result(self, state, version) -> None:
         if state == None or "stack_frames" not in state:
@@ -321,8 +323,9 @@ class DiffDebug(App):
             elif self.parallel_command_bar.value != "":
                 result = Debugger.run_parallel_command(self.parallel_command_bar.value)
 
-                self.diff_area1.append([self.parallel_command_bar.value])
-                self.diff_area2.append([self.parallel_command_bar.value])
+                with lock:
+                    self.diff_area1.append([self.parallel_command_bar.value])
+                    self.diff_area2.append([self.parallel_command_bar.value])
 
                 # append to history
                 self.common_history.append(self.parallel_command_bar.value)
@@ -332,8 +335,9 @@ class DiffDebug(App):
                 # execute last command from history
                 result = Debugger.run_parallel_command(self.common_history[-1])
 
-                self.diff_area1.append([self.parallel_command_bar.value])
-                self.diff_area2.append([self.parallel_command_bar.value])
+                with lock:
+                    self.diff_area1.append([self.parallel_command_bar.value])
+                    self.diff_area2.append([self.parallel_command_bar.value])
 
             if result:
                 await self.set_common_command_result(result)
