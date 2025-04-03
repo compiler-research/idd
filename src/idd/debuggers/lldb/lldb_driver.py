@@ -4,6 +4,7 @@ import lldb
 from idd.driver import Driver, IDDParallelTerminate
 from idd.debuggers.lldb.lldb_extensions import *
 from multiprocessing import Process, Pipe
+from threading import Thread
 
 
 processes = []
@@ -17,6 +18,37 @@ class LLDBStdin:
     def __init__(self, text: str):
         self.text = text
 
+class LLDBEventHandler(Thread):
+    def __init__(self, debugger):
+        self.debugger = debugger
+        super().__init__()
+
+    def run(self):
+        listener = self.debugger.lldb_instance.GetListener()
+        event = lldb.SBEvent()
+        while True:
+            if listener.WaitForEvent(1, event):
+                if event.GetBroadcaster().GetName() == "lldb.process":
+                    if (
+                        event.GetType() == lldb.SBProcess.eBroadcastBitStateChanged
+                        and self.debugger.target.GetProcess().GetState() == lldb.eStateStopped
+                    ):
+                        output = self.debugger.run_single_command("process status")
+                        if output:
+                            self.debugger.fileio.append(output)
+                    elif event.GetType() == lldb.SBProcess.eBroadcastBitSTDOUT:
+                        output = self.debugger.target.GetProcess().GetSTDOUT(1024 * 1024 * 10).split("\n")
+                        if output:
+                            self.debugger.fileio.append(output)
+                    elif event.GetType() == lldb.SBProcess.eBroadcastBitSTDERR:
+                        output = self.debugger.target.GetProcess().GetSTDERR(1024 * 1024 * 10).split("\n")
+                        if output:
+                            self.debugger.fileio.append(output)
+
+                stream = lldb.SBStream()
+                event.GetDescription(stream)
+
+        listener.Clear()
 
 class LLDBDebugger:
     is_initted = False
@@ -27,10 +59,11 @@ class LLDBDebugger:
 
     lldb_instances = None
 
-    def __init__(self, exe="", pid=None):
+    def __init__(self, fileio, exe="", pid=None):
         self.lldb_instance = lldb.SBDebugger.Create()
-        self.lldb_instance.SetAsync(False)
+        self.lldb_instance.SetAsync(True)
         self.lldb_instance.SetUseColor(False)
+        self.fileio = fileio
 
         self.command_interpreter = self.lldb_instance.GetCommandInterpreter()
 
@@ -50,6 +83,10 @@ class LLDBDebugger:
 
         self.is_initted = True
 
+        # class to handle events asynchronously
+        LLDBEventHandler(self).start()
+        print("Called LLDBEventHandler(self, self.fileio).start()")
+        
     def run_single_command(self, command, *_):
         command_result = lldb.SBCommandReturnObject()
         self.command_interpreter.HandleCommand(command, command_result)
@@ -182,6 +219,47 @@ class LLDBParallelDebugger(Driver):
     
     def terminate(self):
         terminate_all_IDDGdbController()
+
+class LLDBAsyncDebugger(Driver):
+    def __init__(self, fileio_base, fileio_regression, base_args="", base_pid=None, regression_args="", regression_pid=None):
+        self.base_pipe = LLDBDebugger(fileio_base, base_args, base_pid)
+        self.regressed_pipe = LLDBDebugger(fileio_regression, regression_args, regression_pid)
+
+    def get_state(self, target=None):
+        if target == "base":
+            return self.base_pipe.get_state()
+        if target == "regressed":
+            return self.regressed_pipe.get_state()
+        
+        return {
+            "base": self.base_pipe.get_state(),
+            "regressed": self.regressed_pipe.get_state(),
+        }
+
+    def run_single_command(self, command, target):
+        if target == "base":
+            return self.base_pipe.run_single_command(command)
+        if target == "regressed":
+            return self.regressed_pipe.run_single_command(command)
+
+    def run_parallel_command(self, command):
+        return {
+            "base": self.base_pipe.run_single_command(command),
+            "regressed": self.regressed_pipe.run_single_command(command)
+            }
+    
+    def insert_stdin(self, text: str):
+        self.base_pipe.insert_stdin(text)
+        self.regressed_pipe.insert_stdin(text)
+    
+    def insert_stdin_single(self, text: str, target: str):
+        if target == "base":
+            self.base_pipe.insert_stdin(text)
+        if target == "regressed":
+            self.regressed_pipe.insert_stdin(text)
+    
+    def terminate(self):
+        return
 
 
 def terminate_all_IDDGdbController():

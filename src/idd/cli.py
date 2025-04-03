@@ -459,6 +459,11 @@ def main() -> None:
     rs = ' '.join(args['regression_script_path']) if args["regression_script_path"] is not None else None
     base_only = False
 
+    disable_registers = args["disable_registers"]
+    disable_assembly = args["disable_assembly"]
+    dd = DiffDebug(disable_assembly, disable_registers, base_only)
+    print("dd.__init__ called")
+
     if comparator == 'gdb':
         from idd.debuggers.gdb.gdb_mi_driver import GDBMiDebugger, IDDGdbController
 
@@ -469,19 +474,17 @@ def main() -> None:
             Debugger = GDBMiDebugger(ba, bs, ra, rs, base_pid=bpid, regression_pid=rpid)
 
     elif comparator == 'lldb':
-        from idd.debuggers.lldb.lldb_driver import LLDBParallelDebugger, LLDBDebugger
+        from idd.debuggers.lldb.lldb_driver import LLDBAsyncDebugger, LLDBDebugger
 
         if ra == "" and rpid is None:
             Debugger = LLDBDebugger(ba, bpid)
             base_only = True
         else:
-            Debugger = LLDBParallelDebugger(ba, bpid, ra, rpid)
+            Debugger = LLDBAsyncDebugger(dd.diff_area1, dd.diff_area2, ba, bpid, ra, rpid)
     else:
         sys.exit("Invalid comparator set")
 
-    disable_registers = args["disable_registers"]
-    disable_assembly = args["disable_assembly"]
-    dd = DiffDebug(disable_assembly, disable_registers, base_only)
+    print("calling dd.run")
     dd.run()
 
 
