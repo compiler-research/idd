@@ -149,6 +149,9 @@ class LLDBDebugger:
     def insert_stdin(self, text: str):
         self.target.GetProcess().PutSTDIN(text)
 
+    def insert_stdin_single(self, text: str, *_):
+        self.target.GetProcess().PutSTDIN(text)
+
     def terminate(self):
         self.event_handler.stop_listening = True
 
