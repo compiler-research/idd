@@ -34,26 +34,28 @@ class LLDBEventHandler(Thread):
         event = lldb.SBEvent()
         while not self.stop_listening:
             if listener.WaitForEvent(1, event):
-                if event.GetBroadcaster().GetName() == "lldb.process":
-                    if (
-                        event.GetType() == lldb.SBProcess.eBroadcastBitStateChanged
-                        and self.debugger.target.GetProcess().GetState() == lldb.eStateStopped
-                    ):
-                        output = self.debugger.run_single_command("process status")
-                        if output:
-                            self.debugger.fileio.append(output)
-                    elif event.GetType() == lldb.SBProcess.eBroadcastBitSTDOUT:
-                        output = self.debugger.target.GetProcess().GetSTDOUT(1024 * 1024 * 10).split("\n")
-                        if output:
-                            self.debugger.fileio.append(output)
-                    elif event.GetType() == lldb.SBProcess.eBroadcastBitSTDERR:
-                        output = self.debugger.target.GetProcess().GetSTDERR(1024 * 1024 * 10).split("\n")
-                        if output:
-                            self.debugger.fileio.append(output)
-
                 stream = lldb.SBStream()
                 event.GetDescription(stream)
                 logging.info(f"Received LLDB Event ({self.debugger}): {stream.GetData()}")
+
+                if event.GetBroadcaster().GetName() == "lldb.process":
+                    if event.GetType() == lldb.SBProcess.eBroadcastBitStateChanged:
+                        if self.debugger.target.GetProcess().GetState() == lldb.eStateStopped:
+                            output = self.debugger.run_single_command("process status")
+                            if output:
+                                self.debugger.fileio.append(output)
+                        if self.debugger.target.GetProcess().GetState() == lldb.eStateExited:
+                            pid = self.debugger.target.GetProcess().id
+                            exit_code = self.debugger.target.GetProcess().exit_state
+                            self.debugger.fileio.append([f"Process {pid} exited with status = {exit_code}"])
+                    elif event.GetType() == lldb.SBProcess.eBroadcastBitSTDOUT:
+                        output = self.debugger.target.GetProcess().GetSTDOUT(1024 * 1024 * 10)
+                        if output:
+                            self.debugger.fileio.append(output.split("\n"))
+                    elif event.GetType() == lldb.SBProcess.eBroadcastBitSTDERR:
+                        output = self.debugger.target.GetProcess().GetSTDERR(1024 * 1024 * 10)
+                        if output:
+                            self.debugger.fileio.append(output.split("\n"))
 
         listener.Clear()
 
@@ -160,6 +162,7 @@ class LLDBDebugger:
 
     @staticmethod
     def run(lldb_args, pipe):
+        raise SystemError("Not Reachable")
         lldb = LLDBDebugger(*lldb_args)
         while True:
             args, kwargs = pipe.recv()
