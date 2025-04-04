@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+import os
 
 from textual import on
 from textual import events
@@ -17,6 +18,21 @@ from idd.ui.header import Header
 from idd.ui.scrollable_area import TextScrollView
 from idd.debuggers.lldb.lldb_io import lock
 
+
+import logging
+logger = logging.getLogger("idd")
+log_level = {
+    "DEBUG": logging.DEBUG,
+    "INFO": logging.INFO,
+    "WARNING": logging.WARNING,
+    "ERROR": logging.ERROR,
+    "CRITICAL": logging.CRITICAL,
+}[os.getenv("LOG_LEVEL", "CRITICAL")]
+log_file = os.getenv("LOG_FILE", None)
+if log_file:
+    logging.basicConfig(level=log_level, filename=log_file)
+else:
+    logging.basicConfig(level=log_level)
 
 class DiffDebug(App):
     CSS_PATH = "layout.tcss"
@@ -466,7 +482,6 @@ def main() -> None:
     disable_registers = args["disable_registers"]
     disable_assembly = args["disable_assembly"]
     dd = DiffDebug(disable_assembly, disable_registers, base_only)
-    print("dd.__init__ called")
 
     if comparator == 'gdb':
         from idd.debuggers.gdb.gdb_mi_driver import GDBMiDebugger, IDDGdbController
@@ -488,7 +503,6 @@ def main() -> None:
     else:
         sys.exit("Invalid comparator set")
 
-    print("calling dd.run")
     dd.run()
 
 

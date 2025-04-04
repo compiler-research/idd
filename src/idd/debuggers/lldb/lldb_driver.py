@@ -7,6 +7,9 @@ from idd.debuggers.lldb.lldb_io import IOManager, ParallelFlag
 from multiprocessing import Process, Pipe
 from threading import Thread
 
+import logging
+logger = logging.getLogger("idd")
+
 
 processes = []
 
@@ -20,14 +23,16 @@ class LLDBStdin:
         self.text = text
 
 class LLDBEventHandler(Thread):
-    def __init__(self, debugger):
+    def __init__(self, debugger: "LLDBDebugger"):
+        logging.info(f"LLDBEventHandler.__init__(debugger={str(debugger)})")
         self.debugger = debugger
+        self.stop_listening = False
         super().__init__()
 
     def run(self):
         listener = self.debugger.lldb_instance.GetListener()
         event = lldb.SBEvent()
-        while True:
+        while not self.stop_listening:
             if listener.WaitForEvent(1, event):
                 if event.GetBroadcaster().GetName() == "lldb.process":
                     if (
@@ -48,6 +53,7 @@ class LLDBEventHandler(Thread):
 
                 stream = lldb.SBStream()
                 event.GetDescription(stream)
+                logging.info(f"Received LLDB Event ({self.debugger}): {stream.GetData()}")
 
         listener.Clear()
 
@@ -65,6 +71,8 @@ class LLDBDebugger:
         self.lldb_instance.SetAsync(True)
         self.lldb_instance.SetUseColor(False)
         self.fileio = fileio
+        
+        self.exe = exe if exe != "" else pid
 
         self.command_interpreter = self.lldb_instance.GetCommandInterpreter()
 
@@ -85,8 +93,8 @@ class LLDBDebugger:
         self.is_initted = True
 
         # class to handle events asynchronously
-        LLDBEventHandler(self).start()
-        print("Called LLDBEventHandler(self, self.fileio).start()")
+        self.event_handler = LLDBEventHandler(self)
+        self.event_handler.start()
         
     def run_single_command(self, command, *_):
         command_result = lldb.SBCommandReturnObject()
@@ -142,7 +150,10 @@ class LLDBDebugger:
         self.target.GetProcess().PutSTDIN(text)
 
     def terminate(self):
-        return
+        self.event_handler.stop_listening = True
+
+    def __str__(self):
+        return f"LLDBDebugger::{self.exe}"
 
     @staticmethod
     def run(lldb_args, pipe):
@@ -223,12 +234,14 @@ class LLDBParallelDebugger(Driver):
 
 class LLDBAsyncDebugger(Driver):
     def __init__(self, fileio_base, fileio_regression, base_args="", base_pid=None, regression_args="", regression_pid=None):
+
         self.is_parallel = ParallelFlag()
         self.io_manager = IOManager(fileio_base, fileio_regression, self.is_parallel)
         self.base_pipe = LLDBDebugger(self.io_manager.get_base_file(), base_args, base_pid)
         self.regressed_pipe = LLDBDebugger(self.io_manager.get_regression_file(), regression_args, regression_pid)
 
     def get_state(self, target=None):
+        logger.info(f"LLDBAsyncDebugger::get_state({target=})")
         self.is_parallel.is_parallel = target is None
         if target == "base":
             return self.base_pipe.get_state()
@@ -241,6 +254,7 @@ class LLDBAsyncDebugger(Driver):
         }
 
     def run_single_command(self, command, target):
+        logger.info(f"LLDBAsyncDebugger::run_single_command({command=}, {target=})")
         self.is_parallel.is_parallel = False
         if target == "base":
             return self.base_pipe.run_single_command(command)
@@ -248,6 +262,7 @@ class LLDBAsyncDebugger(Driver):
             return self.regressed_pipe.run_single_command(command)
 
     def run_parallel_command(self, command):
+        logger.info(f"LLDBAsyncDebugger::run_parallel_command({command=})")
         self.is_parallel.is_parallel = True
         return {
             "base": self.base_pipe.run_single_command(command),
@@ -255,11 +270,13 @@ class LLDBAsyncDebugger(Driver):
             }
     
     def insert_stdin(self, text: str):
+        logger.info(f"LLDBAsyncDebugger::insert_stdin({text=})")
         self.is_parallel.is_parallel = True
         self.base_pipe.insert_stdin(text)
         self.regressed_pipe.insert_stdin(text)
     
     def insert_stdin_single(self, text: str, target: str):
+        logger.info(f"LLDBAsyncDebugger::insert_stdin_single({text=}, {target=})")
         self.is_parallel.is_parallel = False
         if target == "base":
             self.base_pipe.insert_stdin(text)
@@ -267,7 +284,9 @@ class LLDBAsyncDebugger(Driver):
             self.regressed_pipe.insert_stdin(text)
     
     def terminate(self):
-        return
+        logger.info(f"LLDBAsyncDebugger::terminate()")
+        self.base_pipe.terminate()
+        self.regressed_pipe.terminate()
 
 
 def terminate_all_IDDGdbController():
