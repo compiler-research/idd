@@ -1,6 +1,7 @@
 import os
 import lldb
 
+import asyncio
 from idd.driver import Driver, IDDParallelTerminate
 from idd.debuggers.lldb.lldb_extensions import *
 from idd.debuggers.lldb.lldb_io import IOManager, ParallelFlag
@@ -246,18 +247,35 @@ class LLDBAsyncDebugger(Driver):
         self.base_pipe = LLDBDebugger(self.io_manager.get_base_file(), base_args, base_pid)
         self.regressed_pipe = LLDBDebugger(self.io_manager.get_regression_file(), regression_args, regression_pid)
 
-    def get_state(self, target=None):
+    async def get_state(self, target=None, timeout=10):
         logger.info(f"LLDBAsyncDebugger::get_state({target=})")
-        self.is_parallel.is_parallel = target is None
-        if target == "base":
-            return self.base_pipe.get_state()
-        if target == "regressed":
-            return self.regressed_pipe.get_state()
         
-        return {
-            "base": self.base_pipe.get_state(),
-            "regressed": self.regressed_pipe.get_state(),
-        }
+        time_slept = 0
+        self.is_parallel.is_parallel = target is None
+
+        if target == "base":
+            while time_slept < timeout:
+                if self.base_pipe.target.GetProcess().GetState() == lldb.eStateStopped:
+                    return self.base_pipe.get_state()
+                await asyncio.sleep(0.1)
+                time_slept += 0.1
+            return None
+        if target == "regressed":
+            while time_slept < timeout:
+                if self.regressed_pipe.target.GetProcess().GetState() == lldb.eStateStopped:
+                    return self.regressed_pipe.get_state()
+                await asyncio.sleep(0.1)
+                time_slept += 0.1
+            return None
+        
+        while time_slept < timeout:
+            if self.base_pipe.target.GetProcess().GetState() == lldb.eStateStopped and self.regressed_pipe.target.GetProcess().GetState() == lldb.eStateStopped:
+                return {
+                    "base": self.base_pipe.get_state(),
+                    "regressed": self.regressed_pipe.get_state(),
+                }
+            await asyncio.sleep(0.1)
+            time_slept += 0.1
 
     def run_single_command(self, command, target):
         logger.info(f"LLDBAsyncDebugger::run_single_command({command=}, {target=})")

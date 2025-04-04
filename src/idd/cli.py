@@ -3,6 +3,7 @@
 import argparse
 import sys
 import os
+import asyncio
 
 from textual import on
 from textual import events
@@ -77,9 +78,10 @@ class DiffDebug(App):
         self.base_history_index = 0
         self.regressed_history = [""]
         self.regressed_history_index = 0
+        self.flag = False
 
     async def set_command_result(self, version) -> None:
-        state = Debugger.get_state(version)
+        state = await Debugger.get_state(version)
 
         await self.set_pframes_result(state, version)
         await self.set_pargs_result(state, version)
@@ -96,7 +98,12 @@ class DiffDebug(App):
 
             await self.compare_contents(raw_base_contents, raw_regression_contents)
 
-            state = Debugger.get_state()
+    async def set_systems_state(self) -> None:
+        if not self.flag:
+            self.flag = True
+
+            state = await Debugger.get_state()
+            if state is None: return
 
             await self.set_pframes_command_result(state)
             await self.set_pargs_command_result(state)
@@ -107,6 +114,7 @@ class DiffDebug(App):
                 await self.set_pregisters_command_result(state)
 
             #calls = Debugger.get_current_calls()
+            self.flag = False
 
     async def compare_contents(self, raw_base_contents, raw_regression_contents):
         if raw_base_contents != '' and raw_regression_contents != '':
@@ -357,6 +365,7 @@ class DiffDebug(App):
 
             if result:
                 await self.set_common_command_result(result)
+                asyncio.create_task(self.set_systems_state())
 
             self.parallel_command_bar.value = ""
 
