@@ -2,6 +2,8 @@ import os
 import json
 import logging, time
 
+from pygdbmi import gdbmiparser
+
 from idd.debuggers.gdb.idd_gdb_controller import IDDGdbController
 from idd.driver import Driver
 
@@ -36,13 +38,13 @@ class GDBMiDebugger(Driver):
 
         # Send command to both GDB instances
         self.base_gdb_instance.write(command)
-        time.sleep(0.4)  # Prevent overload
+        time.sleep(0.2)  # Prevent overload
         self.regressed_gdb_instance.write(command)
 
         # Read outputs with crash handling
-        base_result = self.base_gdb_instance.read()
-        time.sleep(0.4)  # Prevent overload
-        regressed_result = self.regressed_gdb_instance.read()
+        base_result = self.base_gdb_instance.read_until_prompt()
+        #time.sleep(0.8)  # Prevent overload
+        regressed_result = self.regressed_gdb_instance.read_until_prompt()
 
         if not base_result:
             logger.warning("Base GDB instance may have crashed.")
@@ -65,26 +67,48 @@ class GDBMiDebugger(Driver):
         if not raw_result:
             return response  # Return an empty list if no output
 
-        # Split into lines and process each line
-        lines = raw_result.strip().split("\r\n")
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue  # Ignore empty lines
+        # Split by carriage returns (used in PTY), but also clean up empty lines
+        lines = [line.strip() for line in raw_result.strip().split("\r") if line.strip()]
 
-            # Handle GDB prompts separately (e.g., interactive confirmations)
-            if line.endswith("(y or n)?") or line.endswith("[y/n]"):
-                logger.warning(f"GDB is waiting for user input: {line}")
-                user_input = input("GDB Prompt detected. Please enter response (y/n): ").strip()
-                self.write(user_input)  # Send user response back to GDB
-                continue  # Skip further processing of this prompt
+        for raw_line in lines:
+            try:
+                parsed = gdbmiparser.parse_response(raw_line)
+            except ValueError as e:
+                logger.warning(f"Unparsable line from GDB: {raw_line!r} ({e})")
+                continue
 
-            # Process normal GDB output
-            processed_output = parse_gdb_line(line)
-            response.append(processed_output)
+            if parsed["type"] == "console":
+                line = str(parsed["payload"]).strip()
+
+                if not line:
+                    continue
+
+                # Detect interactive GDB prompts
+                if line.endswith("(y or n)?") or line.endswith("[y/n]"):
+                    logger.warning(f"GDB is waiting for user input: {line}")
+                    try:
+                        user_input = input("GDB Prompt detected. Please enter response (y/n): ").strip()
+                    except KeyboardInterrupt:
+                        logger.warning("User cancelled GDB input prompt.")
+                        user_input = "n"
+
+                    self.write(user_input)
+                    continue  # Skip this prompt line
+
+                # Parse the cleaned line (e.g., remove MI wrappers, etc.)
+                processed_output = parse_gdb_line(line)
+                response.append(processed_output)
+
+            #elif parsed["type"] in {"log", "target", "notify"}:
+                # You can optionally handle these too
+                #response.append(f"[{parsed['type']}] {parsed.get('payload', '')}")
+
+            #elif parsed["type"] == "result":
+                # Sometimes it's helpful to log MI command results too
+                #response.append(f"[MI Result] ^{parsed.get('message', '')}")
 
         return response
-        #return lines
+
     
     def run_single_command(self, command, version):
         global base_response

@@ -4,6 +4,7 @@ import select
 import pty
 import signal
 import threading
+import time
 
 from idd.driver import IDDParallelTerminate
 from idd.debuggers.gdb.utils import parse_gdb_line
@@ -75,6 +76,37 @@ class IDDGdbController(GdbController):
             except OSError:
                 return None
         return None
+
+    def read_until_prompt(self, timeout=2.0, grace_period=0.2) -> str:
+        """
+        Accumulates GDB output until the final (gdb) prompt is seen and
+        no new output appears for a short grace period.
+        """
+        output = ""
+        start_time = time.time()
+        last_gdb_prompt_time = None
+
+        while True:
+            chunk = self.read()
+            if chunk:
+                output += chunk
+                if "(gdb) " in chunk:
+                    last_gdb_prompt_time = time.time()
+
+            now = time.time()
+
+            # Check for grace period after seeing (gdb)
+            if last_gdb_prompt_time is not None:
+                if now - last_gdb_prompt_time >= grace_period:
+                    break
+
+            if now - start_time > timeout:
+                logger.warning("read_until_prompt() timed out")
+                break
+
+            time.sleep(0.05)
+
+        return output
 
     def read_debuggee_output(self):
         try:
