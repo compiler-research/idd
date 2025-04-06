@@ -3,7 +3,8 @@ import lldb
 
 from idd.driver import Driver, IDDParallelTerminate
 from idd.debuggers.lldb.lldb_extensions import *
-from multiprocessing import Process, Pipe
+from multiprocessing import Pipe
+from threading import Thread
 
 
 processes = []
@@ -194,7 +195,7 @@ def create_LLDBDebugger_for_parallel(*args):
     global processes
 
     parent_conn, child_conn = Pipe()
-    process = Process(target=LLDBDebugger.run, args=(args, child_conn))
+    process = Thread(target=LLDBDebugger.run, args=(args, child_conn))
     processes.append((process, parent_conn))
     process.start()
     return parent_conn
