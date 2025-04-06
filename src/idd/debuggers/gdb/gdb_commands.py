@@ -61,7 +61,7 @@ class PrintState (gdb.Command):
             if (symbol.is_variable):
                 name = symbol.name
                 if not name in names:
-                    locals.append('{} = {}'.format(name, symbol.value(frame)))
+                    locals.append('{} = {}'.format(name, symbol.value(frame)).replace('"',''))
 
             # get args
             if (symbol.is_argument):
