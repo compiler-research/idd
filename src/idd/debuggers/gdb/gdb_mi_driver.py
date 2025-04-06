@@ -145,40 +145,58 @@ class GDBMiDebugger(Driver):
         if not raw_result:
             return response  # Return an empty list if no output
 
-        # Split into lines and process each line
-        lines = raw_result.strip().split("\r\n")
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue  # Ignore empty lines
+        # Split by carriage returns (used in PTY), but also clean up empty lines
+        lines = [line.strip() for line in raw_result.strip().split("\r") if line.strip()]
 
-            # Handle GDB prompts separately (e.g., interactive confirmations)
-            if line.endswith("(y or n)?") or line.endswith("[y/n]"):
-                logger.warning(f"GDB is waiting for user input: {line}")
-                user_input = input("GDB Prompt detected. Please enter response (y/n): ").strip()
-                self.write(user_input)  # Send user response back to GDB
-                continue  # Skip further processing of this prompt
+        for raw_line in lines:
+            try:
+                parsed = gdbmiparser.parse_response(raw_line)
+            except ValueError as e:
+                logger.warning(f"Unparsable line from GDB: {raw_line!r} ({e})")
+                continue
 
-            # Process normal GDB output
-            processed_output = parse_gdb_line(line)
-            response.append(processed_output)
+            if parsed["type"] == "console":
+                line = str(parsed["payload"]).strip()
 
-        return response
+                if not line:
+                    continue
+
+                # Detect interactive GDB prompts
+                if line.endswith("(y or n)?") or line.endswith("[y/n]"):
+                    logger.warning(f"GDB is waiting for user input: {line}")
+                    try:
+                        user_input = input("GDB Prompt detected. Please enter response (y/n): ").strip()
+                    except KeyboardInterrupt:
+                        logger.warning("User cancelled GDB input prompt.")
+                        user_input = "n"
+
+                    self.write(user_input)
+                    continue  # Skip this prompt line
+
+                # Parse the cleaned line (e.g., remove MI wrappers, etc.)
+                processed_output = parse_gdb_line(line)
+                try:
+                    parsed_dict = json.loads(processed_output)
+                except json.JSONDecodeError:
+                    parsed_dict = processed_output
+
+                if parsed_dict:
+                    return parsed_dict
     
     def get_state(self, version=None):
         if version is not None:
             return self.run_single_special_command("pstate", version)
-        
+
         # get base and regression state
         self.base_gdb_instance.write((" {command}\n".format(command = "pstate")))
         self.regressed_gdb_instance.write((" {command}\n".format(command = "pstate")))
 
         # wait till base is done
-        raw_result = self.base_gdb_instance.read()
+        raw_result = self.base_gdb_instance.read_until_prompt()
         base_state = self.parse_special_command_output(raw_result)
         
         # wait till regression is done
-        raw_result = self.regressed_gdb_instance.read()
+        raw_result = self.regressed_gdb_instance.read_until_prompt()
         regression_state = self.parse_special_command_output(raw_result)
 
         return { "base" : base_state, "regressed" : regression_state }
