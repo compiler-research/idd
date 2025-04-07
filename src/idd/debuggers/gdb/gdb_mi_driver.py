@@ -134,7 +134,7 @@ class GDBMiDebugger(Driver):
             raw_result = self.gdb_instances[version].recv()
         except Exception as e:
             logger.exception(f"Error executing GDB command: {command}")
-            self.handle_gdb_crash()
+            # self.handle_gdb_crash()
             return []
 
         return self.parse_special_command_output(raw_result)
