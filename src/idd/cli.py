@@ -470,12 +470,13 @@ def main() -> None:
 
     elif comparator == 'lldb':
         from idd.debuggers.lldb.lldb_driver import LLDBParallelDebugger, LLDBDebugger
+        from idd.debuggers.lldb.lldb_new_driver import LLDBNewDriver
 
         if ra == "" and rpid is None:
             Debugger = LLDBDebugger(ba, bpid)
             base_only = True
         else:
-            Debugger = LLDBParallelDebugger(ba, bpid, ra, rpid)
+            Debugger = LLDBNewDriver(ba, bpid, ra, rpid)
     else:
         sys.exit("Invalid comparator set")
 
