@@ -1,11 +1,6 @@
-import os, sys, pty, tty, select, time, threading, signal
-sys.path.append("/Applications/Xcode.app/Contents/SharedFrameworks/LLDB.framework/Resources/Python")
-
+import os, sys, pty, tty, select, threading
 import lldb
-
-from idd.driver import Driver
-from idd.debuggers.lldb.lldb_extensions import *
-
+from lldb import eLaunchFlagStopAtEntry
 
 class IDDLLDBController:
     def __init__(self, exe="", pid=None):
@@ -13,11 +8,11 @@ class IDDLLDBController:
         self.pid = pid
         self.debugger = lldb.SBDebugger.Create()
         self.debugger.SetAsync(False)
+        self.debugger.SetUseColor(False)
 
         self.master_fd, self.slave_fd = pty.openpty()
         self.slave_name = os.ttyname(self.slave_fd)
-        self.ttyname = os.ttyname(self.slave_fd)
-
+        tty.setraw(self.master_fd)
 
         self.debuggee_output = []
         self._start_output_stream_thread()
@@ -29,22 +24,12 @@ class IDDLLDBController:
         self._launch_process()
 
     def _launch_process(self):
-        launch_info = lldb.SBLaunchInfo(None)
-
-        # Open PTY master/slave
-        master_fd, slave_fd = pty.openpty()
-        slave_name = os.ttyname(slave_fd)
-
-        # Optional: put slave into raw mode (for terminal emulation)
-        tty.setraw(master_fd)
-
-        # Configure launch info
         launch_info = lldb.SBLaunchInfo([])
-        # Redirect stdin/stdout/stderr using file actions
-        launch_info.AddOpenFileAction(0, slave_name, True, False)  # stdin
-        launch_info.AddOpenFileAction(1, slave_name, False, True)  # stdout
-        launch_info.AddOpenFileAction(2, slave_name, False, True)  # stderr
+        launch_info.SetLaunchFlags(eLaunchFlagStopAtEntry)
 
+        launch_info.AddOpenFileAction(0, self.slave_name, True, False)  # stdin
+        launch_info.AddOpenFileAction(1, self.slave_name, False, True)  # stdout
+        launch_info.AddOpenFileAction(2, self.slave_name, False, True)  # stderr
 
         error = lldb.SBError()
         self.process = self.target.Launch(launch_info, error)
@@ -66,13 +51,30 @@ class IDDLLDBController:
         self.output_thread = threading.Thread(target=stream_output, daemon=True)
         self.output_thread.start()
 
-    def send_input(self, text):
-        os.write(self.master_fd, (text + "\n").encode())
+    def write(self, command: str):
+        """Send LLDB command as if typed in interactive shell."""
+        if not command.endswith("\n"):
+            command += "\n"
+        os.write(self.master_fd, command.encode())
 
-    def get_output(self):
+    def run_lldb_command(self, command: str):
+        result = lldb.SBCommandReturnObject()
+        self.debugger.GetCommandInterpreter().HandleCommand(command, result)
+        return [result.GetOutput()]
+
+
+    def send_input_to_debuggee(self, text):
+        """Send input to the debugged process' stdin."""
+        if not text.endswith("\n"):
+            text += "\n"
+        os.write(self.master_fd, text.encode())
+
+    def get_debuggee_output(self):
+        """Return all captured debuggee output so far."""
         return "".join(self.debuggee_output)
 
     def pop_output(self):
+        """Return and clear debuggee output buffer."""
         output = self.debuggee_output
         self.debuggee_output = []
         return output
