@@ -50,7 +50,7 @@ class PrintState (gdb.Command):
     # ensures correct parsing of the stack frames as
     stack_frames = command_result.split('\n')
     #trimmed_stack_frames = [self.trim_quotes(frame) for frame in stack_frames]
-    result['stack_frames'] = stack_frames
+    result['stack_frames'] = stack_frames or []
 
     frame = gdb.selected_frame()
     block = frame.block()
@@ -102,10 +102,10 @@ class PrintState (gdb.Command):
       except Exception as e:
         registers.append(str(e))
 
-    result['locals'] = locals
-    result['args'] = args
-    result['instructions'] = instructions
-    result['registers'] = registers
+    result['locals'] = locals or []
+    result['args'] = args or []
+    result['instructions'] = instructions or []
+    result['registers'] = registers or []
 
     json_result = json.dumps(result)
 
