@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+import os
 from asyncio import sleep
 
 from textual import on
@@ -19,7 +20,7 @@ from idd.ui.scrollable_area import TextScrollView
 
 
 class DiffDebug(App):
-    CSS_PATH = "layout.tcss"
+    CSS_PATH = os.path.join(os.path.dirname(__file__), "layout.tcss")
 
     current_index: Reactive[int] = Reactive(-1)
     tab_index = ["parallel_command_bar", "base_command_bar", "regressed_command_bar"]
