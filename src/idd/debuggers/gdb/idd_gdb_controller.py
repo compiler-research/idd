@@ -77,7 +77,7 @@ class IDDGdbController(GdbController):
                 return None
         return None
 
-    def read_until_prompt(self, timeout=2.0, grace_period=0.2) -> str:
+    def read_until_prompt(self, timeout=0.5, grace_period=0.3) -> str:
         """
         Accumulates GDB output until the final (gdb) prompt is seen and
         no new output appears for a short grace period.
@@ -104,7 +104,7 @@ class IDDGdbController(GdbController):
                 logger.warning("read_until_prompt() timed out")
                 break
 
-            time.sleep(0.05)
+            time.sleep(0.02)
 
         return output
 
