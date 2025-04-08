@@ -1,6 +1,7 @@
 from idd.driver import Driver
 from idd.debuggers.lldb.lldb_controller import IDDLLDBController
 from idd.debuggers.lldb.lldb_extensions import *
+from concurrent.futures import ThreadPoolExecutor
 
 class LLDBNewDriver(Driver):
     def __init__(self, base_exe=None, base_pid=None, regressed_exe=None, regressed_pid=None):
@@ -16,12 +17,14 @@ class LLDBNewDriver(Driver):
             return result
 
     def run_parallel_command(self, command):
-        base_output = self.run_single_command(command, "base")
-        regressed_output = self.run_single_command(command, "regressed")
-        return {
-            "base": base_output,
-            "regressed": regressed_output
-        }
+        with ThreadPoolExecutor() as executor:
+            base_future = executor.submit(self.run_single_command, command, "base")
+            regressed_future = executor.submit(self.run_single_command, command, "regressed")
+            return {
+                "base": base_future.result(),
+                "regressed": regressed_future.result()
+            }
+
 
     # def insert_stdin(self, text):
     #     self.base_controller.send_input_to_debuggee(text)
