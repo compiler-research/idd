@@ -1,6 +1,6 @@
 import os
 import json
-import logging, time
+import logging, threading
 
 from pygdbmi import gdbmiparser
 
@@ -33,30 +33,29 @@ class GDBMiDebugger(Driver):
         self.run_parallel_command("source " + os.path.join(dirname, "gdb_commands.py"))
 
     def run_parallel_command(self, command):
-        """Executes a GDB command on both instances in parallel with proper handling."""
-        logger.info(f"Running parallel command: {command}")
+        base_result = []
+        regressed_result = []
 
-        # Send command to both GDB instances
+        def get_result(instance, output_holder):
+            raw_result = instance.read_until_prompt()
+            parsed = self.parse_command_output(raw_result)
+            output_holder.append(parsed)
+
+        # Start both receivers in parallel
+        base_thread = threading.Thread(target=get_result, args=(self.base_gdb_instance, base_result))
+        regressed_thread = threading.Thread(target=get_result, args=(self.regressed_gdb_instance, regressed_result))
+
         self.base_gdb_instance.write(command)
-        time.sleep(0.2)  # Prevent overload
         self.regressed_gdb_instance.write(command)
 
-        # Read outputs with crash handling
-        base_result = self.base_gdb_instance.read_until_prompt()
-        #time.sleep(0.8)  # Prevent overload
-        regressed_result = self.regressed_gdb_instance.read_until_prompt()
-
-        if not base_result:
-            logger.warning("Base GDB instance may have crashed.")
-            # self.base_gdb_instance.handle_gdb_crash()
-
-        if not regressed_result:
-            logger.warning("Regressed GDB instance may have crashed.")
-            # self.regressed_gdb_instance.handle_gdb_crash()
+        base_thread.start()
+        regressed_thread.start()
+        base_thread.join()
+        regressed_thread.join()
 
         return {
-            "base": self.parse_command_output(base_result),
-            "regressed": self.parse_command_output(regressed_result)
+            "base": base_result[0],
+            "regressed": regressed_result[0],
         }
 
 

@@ -1,6 +1,7 @@
 import os
 import logging
 import select
+import fcntl
 import pty
 import signal
 import threading
@@ -19,6 +20,11 @@ class IDDGdbController(GdbController):
     script_file_path = None
 
     def __init__(self, base_args="", base_pid=None, script_file_path=None):
+        def make_fd_nonblocking(fd):
+            flags = fcntl.fcntl(fd, fcntl.F_GETFL)
+            fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+
+        self.pid = None
         self.script_file_path = script_file_path
         self.base_args = base_args
         self.base_pid = base_pid
@@ -32,13 +38,17 @@ class IDDGdbController(GdbController):
         self.debuggee_master_fd, self.debuggee_slave_fd = pty.openpty()
         self.debuggee_tty = os.ttyname(self.debuggee_slave_fd)
 
+        make_fd_nonblocking(self.master_fd)
+        make_fd_nonblocking(self.debuggee_master_fd)
+
+
         if base_args:
             self.gdb_command.append(base_args)
         elif base_pid:
             self.gdb_command.append(f"--pid={base_pid}")
 
-        self.spawn_new_gdb_subprocess()
         self.start_debuggee_output_streaming()
+        self.spawn_new_gdb_subprocess()
 
     def spawn_new_gdb_subprocess(self):
         if hasattr(self, "pid") and self.pid:
@@ -56,28 +66,37 @@ class IDDGdbController(GdbController):
             os.execvp(self.gdb_command[0], self.gdb_command)
         else:
             os.close(self.slave_fd)
-            logger.info(f"GDB pid: {self.pid}")
+
+            # Wait for initial GDB prompt to ensure GDB is ready
+            self.read_until_prompt(timeout=2.0)
+
+            # Assign inferior TTY to forward debuggee I/O
             self.write(f"set inferior-tty {self.debuggee_tty}")
+
+            # Optional: read again to confirm it's accepted
+            self.read_until_prompt(timeout=1.0)
+
+            logger.info(f"GDB pid: {self.pid}")
+
 
     def write(self, command):
         os.write(self.master_fd, (command + "\n").encode())
 
     def read(self):
-        timeout_sec = 0.5
-        ready, _, _ = select.select([self.master_fd], [], [], timeout_sec)
-        if ready:
-            try:
-                new_data = os.read(self.master_fd, 1024).decode(errors="replace")
-                self.buffer += new_data
-                if "\n" in self.buffer:
-                    lines = self.buffer.split("\n")
-                    self.buffer = lines[-1]
-                    return "\n".join(lines[:-1])
-            except OSError:
-                return None
+        try:
+            new_data = os.read(self.master_fd, 4096).decode(errors="replace")
+            self.buffer += new_data
+            if "\n" in self.buffer:
+                lines = self.buffer.split("\n")
+                self.buffer = lines[-1]
+                return "\n".join(lines[:-1])
+        except BlockingIOError:
+            return None
+        except OSError:
+            return None
         return None
 
-    def read_until_prompt(self, timeout=0.5, grace_period=0.3) -> str:
+    def read_until_prompt(self, timeout=0.5, grace_period=0.2) -> str:
         """
         Accumulates GDB output until the final (gdb) prompt is seen and
         no new output appears for a short grace period.
@@ -108,22 +127,33 @@ class IDDGdbController(GdbController):
 
         return output
 
+
     def read_debuggee_output(self):
+        data = ""
         try:
-            ready, _, _ = select.select([self.debuggee_master_fd], [], [], 0.1)
-            if ready:
-                return os.read(self.debuggee_master_fd, 1024).decode(errors="replace")
+            while True:
+                chunk = os.read(self.debuggee_master_fd, 4096).decode(errors="replace")
+                if not chunk:
+                    break
+                data += chunk
+        except BlockingIOError:
+            pass  # No more data to read for now
         except OSError:
-            return None
-        return None
+            return None  # Debuggee might have terminated
+
+        return data if data else None
 
     def start_debuggee_output_streaming(self):
         def stream():
+            logger.debug("[debuggee stream] started")
             while self.is_gdb_alive():
                 output = self.read_debuggee_output()
                 if output:
                     self.debuggee_output_buffer.append(output)
                     logger.debug(f"[debuggee] {output.strip()}")
+                time.sleep(0.01)  # Light pause to prevent tight spin
+
+            logger.debug("[debuggee stream] terminated")
 
         self.debuggee_stream_thread = threading.Thread(target=stream, daemon=True)
         self.debuggee_stream_thread.start()
