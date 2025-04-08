@@ -39,42 +39,42 @@ class LLDBNewDriver(Driver):
     def get_state(self, *_):
         return {
             'base' : {
-                'stack_frames': self.get_current_stack_frames(),
-                'locals': self.get_current_local_vars(None),
-                'args': self.get_current_args(),
-                'instructions': self.get_current_instructions(),
-                'registers': self.get_current_registers()
+                'stack_frames': self.get_current_stack_frames(self.base_controller),
+                'locals': self.get_current_local_vars(self.base_controller, None),
+                'args': self.get_current_args(self.base_controller),
+                'instructions': self.get_current_instructions(self.base_controller),
+                'registers': self.get_current_registers(self.base_controller)
             },
             'regressed' : {
-                'stack_frames': self.get_current_stack_frames(),
-                'locals': self.get_current_local_vars(None),
-                'args': self.get_current_args(),
-                'instructions': self.get_current_instructions(),
-                'registers': self.get_current_registers()
+                'stack_frames': self.get_current_stack_frames(self.regressed_controller),
+                'locals': self.get_current_local_vars(self.regressed_controller, None),
+                'args': self.get_current_args(self.regressed_controller),
+                'instructions': self.get_current_instructions(self.regressed_controller),
+                'registers': self.get_current_registers(self.regressed_controller)
             }
         }
 
-    def get_current_stack_frames(self):
-        target = self.base_controller.debugger.GetTargetAtIndex(0)
+    def get_current_stack_frames(self, controller):
+        target = controller.debugger.GetTargetAtIndex(0)
         return get_current_stack_frame_from_target(target) or []
 
-    def get_current_args(self):
-        target = self.base_controller.debugger.GetTargetAtIndex(0)
+    def get_current_args(self, controller):
+        target = controller.debugger.GetTargetAtIndex(0)
         return get_args_as_list(target) or []
 
-    def get_current_local_vars(self, filters):
-        target = self.base_controller.debugger.GetTargetAtIndex(0)
+    def get_current_local_vars(self, controller, filters):
+        target = controller.debugger.GetTargetAtIndex(0)
         locals = get_local_vars_as_list(target)
         if filters == 'ignore-order-declaration':
             locals.sort()
         return locals or []
 
-    def get_current_instructions(self):
-        target = self.base_controller.debugger.GetTargetAtIndex(0)
+    def get_current_instructions(self, controller):
+        target = controller.debugger.GetTargetAtIndex(0)
         return get_instructions_as_list(target) or []
 
-    def get_current_registers(self):
-        target = self.base_controller.debugger.GetTargetAtIndex(0)
+    def get_current_registers(self, controller):
+        target = controller.debugger.GetTargetAtIndex(0)
         return get_registers_as_list(target) or []
 
     def terminate(self):
