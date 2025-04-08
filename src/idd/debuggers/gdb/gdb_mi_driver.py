@@ -114,8 +114,8 @@ class GDBMiDebugger(Driver):
         global regressed_response
 
         try:
-            self.gdb_instances[version].write(((" {command}\n".format(command = command),), {"timeout_sec": 60}))
-            raw_result = self.gdb_instances[version].recv()
+            self.gdb_instances[version].write(command)
+            raw_result = self.gdb_instances[version].read_until_prompt()
 
         except Exception as e:
             logger.exception(f"Error executing GDB command: {command}")
@@ -129,8 +129,8 @@ class GDBMiDebugger(Driver):
         global regressed_response
 
         try:
-            self.gdb_instances[version].write(((" {command}\n".format(command = command),), {"timeout_sec": 60}))
-            raw_result = self.gdb_instances[version].recv()
+            self.gdb_instances[version].write(command)
+            raw_result = self.gdb_instances[version].read_until_prompt()
         except Exception as e:
             logger.exception(f"Error executing GDB command: {command}")
             # self.handle_gdb_crash()
