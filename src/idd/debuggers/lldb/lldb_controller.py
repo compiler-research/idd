@@ -14,8 +14,8 @@ class IDDLLDBController:
         self.slave_name = os.ttyname(self.slave_fd)
         tty.setraw(self.master_fd)
 
-        self.debuggee_output = []
-        self._start_output_stream_thread()
+        # self.debuggee_output = []
+        # self._start_output_stream_thread()
 
         self.target = self.debugger.CreateTarget(self.exe)
         if not self.target.IsValid():
@@ -27,9 +27,9 @@ class IDDLLDBController:
         launch_info = lldb.SBLaunchInfo([])
         launch_info.SetLaunchFlags(eLaunchFlagStopAtEntry)
 
-        launch_info.AddOpenFileAction(0, self.slave_name, True, False)  # stdin
-        launch_info.AddOpenFileAction(1, self.slave_name, False, True)  # stdout
-        launch_info.AddOpenFileAction(2, self.slave_name, False, True)  # stderr
+        launch_info.AddOpenFileAction(0, self.slave_name, read=True, write=False)  # stdin
+        launch_info.AddOpenFileAction(1, self.slave_name, read=False, write=True)  # stdout
+        launch_info.AddOpenFileAction(2, self.slave_name, read=False, write=True)  # stderr
 
         error = lldb.SBError()
         self.process = self.target.Launch(launch_info, error)
@@ -60,7 +60,9 @@ class IDDLLDBController:
     def run_lldb_command(self, command: str):
         result = lldb.SBCommandReturnObject()
         self.debugger.GetCommandInterpreter().HandleCommand(command, result)
-        return [result.GetOutput()]
+        if result.Succeeded():
+            return result.GetOutput().splitlines()
+        return result.GetError().splitlines()
 
 
     def send_input_to_debuggee(self, text):
@@ -71,7 +73,12 @@ class IDDLLDBController:
 
     def get_debuggee_output(self):
         """Return all captured debuggee output so far."""
-        return "".join(self.debuggee_output)
+        os.set_blocking(self.master_fd, False)
+        try:
+            content = os.read(self.master_fd, 1024 * 1024 * 10).decode(errors="replace")
+        except BlockingIOError:
+            content = ""
+        return content.splitlines()
 
     def pop_output(self):
         """Return and clear debuggee output buffer."""
