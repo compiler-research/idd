@@ -47,8 +47,8 @@ class IDDGdbController(GdbController):
         elif base_pid:
             self.gdb_command.append(f"--pid={base_pid}")
 
-        self.start_debuggee_output_streaming()
         self.spawn_new_gdb_subprocess()
+        self.start_debuggee_output_streaming()
 
     def spawn_new_gdb_subprocess(self):
         if hasattr(self, "pid") and self.pid:
