@@ -21,6 +21,22 @@ class PrintState (gdb.Command):
   def __init__ (self):
     super (PrintState, self).__init__ ("pstate", gdb.COMMAND_USER)
 
+  def trim_middle_quotes(input_string):
+      # Ensure the string starts and ends with quotes
+      if input_string.startswith('"') and input_string.endswith('"'):
+          # Remove the first and last quotes temporarily
+          trimmed = input_string[1:-1]
+          # Remove all remaining quotes
+          trimmed = trimmed.replace('"', '')
+          # Add back the starting and ending quotes
+          # print(trimmed)
+          return f'"{trimmed}"'
+      return input_string  # Return as-is if it doesn't start and end with quotes
+
+  def trim_quotes(self, input_string):
+      trimmed = input_string.replace('"','')
+      return trimmed
+
   def invoke (self, arg, from_tty):
     result = {}
 
@@ -33,8 +49,12 @@ class PrintState (gdb.Command):
 
     # get stack frame
     command_result = gdb.execute("bt", to_string=True)
-    stack_frames = command_result.split('\n')
-    result['stack_frames'] = stack_frames
+
+    # leave only the starting and ending quotes
+    # ensures correct parsing of the stack frames as
+    stack_frames = [line for line in (command_result or "").split('\n') if line.strip()]
+    trimmed_stack_frames = [self.trim_quotes(frame) for frame in stack_frames]
+    result['stack_frames'] = trimmed_stack_frames or []
 
     frame = gdb.selected_frame()
     block = frame.block()
@@ -45,13 +65,13 @@ class PrintState (gdb.Command):
             if (symbol.is_variable):
                 name = symbol.name
                 if not name in names:
-                    locals.append('{} = {}'.format(name, symbol.value(frame)))
+                    locals.append('{} = {}'.format(name, symbol.value(frame)).replace('"',''))
 
             # get args
             if (symbol.is_argument):
                 name = symbol.name
                 if not name in names:
-                    args.append('{} = {}\n'.format(name, symbol.value(frame)))
+                    args.append('{} = {}\n'.format(name, symbol.value(frame)).replace('"',''))
         block = block.superblock
 
     # get instructions
@@ -86,14 +106,15 @@ class PrintState (gdb.Command):
       except Exception as e:
         registers.append(str(e))
 
-    result['locals'] = locals
-    result['args'] = args
-    result['instructions'] = instructions
-    result['registers'] = registers
+    result['locals'] = locals or []
+    result['args'] = args or []
+    result['instructions'] = instructions or []
+    result['registers'] = registers or []
 
     json_result = json.dumps(result)
 
-    print(json_result)
+    gdb.write(f'{json_result}\n', gdb.STDOUT)
+
 
 class PrintFrame (gdb.Command):
   def __init__ (self):
@@ -101,7 +122,7 @@ class PrintFrame (gdb.Command):
 
   def invoke (self, arg, from_tty):
     result = gdb.execute("bt", to_string=True)
-    print(result)
+    gdb.write(result, gdb.STDOUT)
 
 class PrintLocals (gdb.Command):
   def __init__ (self):
