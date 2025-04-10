@@ -76,6 +76,7 @@ class DiffDebug(App):
     async def set_command_result(self, version) -> None:
         state = Debugger.get_state(version)
 
+        await self.set_debugee_console_output(version)
         await self.set_pframes_result(state, version)
         await self.set_pargs_result(state, version)
         await self.set_plocals_result(state, version)
@@ -96,6 +97,7 @@ class DiffDebug(App):
             await self.set_pframes_command_result(state)
             await self.set_pargs_command_result(state)
             await self.set_plocals_command_result(state)
+            await self.set_debugee_console_output()
             if not self.disable_asm:
                 await self.set_pasm_command_result(state)
             if not self.disable_registers:
@@ -103,8 +105,19 @@ class DiffDebug(App):
 
             #calls = Debugger.get_current_calls()
 
+    async def set_debugee_console_output(self, target=None):
+        if target == "base":
+            result = Debugger.get_console_output(target)
+            self.diff_area1.append(result)
+        elif target == "regressed":
+            result = Debugger.get_console_output(target)
+            self.diff_area2.append(result)
+        else:
+            result = Debugger.get_console_output()
+            await self.compare_contents(result["base"], result["regressed"])
+
     async def compare_contents(self, raw_base_contents, raw_regression_contents):
-        if raw_base_contents != '' and raw_regression_contents != '':
+        if raw_base_contents or raw_regression_contents:
             diff1 = self.diff_driver.get_diff(raw_base_contents, raw_regression_contents, "base")
             self.diff_area1.append(diff1)
 
@@ -350,10 +363,10 @@ class DiffDebug(App):
                 exit(0)
 
             if self.parallel_command_bar.value.startswith("stdin "):
-                content = self.parallel_command_bar.value[6:]
-                Debugger.insert_stdin(content + "\n")
-                self.diff_area1.append([content])
-                self.diff_area2.append([content])
+                Debugger.insert_stdin(self.parallel_command_bar.value[6:] + "\n")
+                self.diff_area1.append([self.parallel_command_bar.value[6:]])
+                self.diff_area2.append([self.parallel_command_bar.value[6:]])
+
                 result = {}
 
             elif self.parallel_command_bar.value != "":
@@ -410,7 +423,7 @@ class DiffDebug(App):
         elif event.control.id == 'regressed-command-bar':
             if self.regressed_command_bar.value.startswith("stdin "):
                 Debugger.insert_stdin_single(self.regressed_command_bar.value[6:] + "\n", "regressed")
-                self.diff_area1.append([self.base_command_bar.value[6:]])
+                self.diff_area2.append([self.regressed_command_bar.value[6:]])
 
             elif self.regressed_command_bar.value != "":
                 result = Debugger.run_single_command(self.regressed_command_bar.value, "regressed")
@@ -516,12 +529,13 @@ def main() -> None:
 
     elif comparator == 'lldb':
         from idd.debuggers.lldb.lldb_driver import LLDBParallelDebugger, LLDBDebugger
+        from idd.debuggers.lldb.lldb_new_driver import LLDBNewDriver
 
         if ra == "" and rpid is None:
             Debugger = LLDBDebugger(ba, bpid)
             base_only = True
         else:
-            Debugger = LLDBParallelDebugger(ba, bpid, ra, rpid)
+            Debugger = LLDBNewDriver(ba, bpid, ra, rpid)
     else:
         sys.exit("Invalid comparator set")
 
