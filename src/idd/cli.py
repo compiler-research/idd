@@ -496,10 +496,10 @@ def main() -> None:
 
     parser.add_argument('-c','--comparator', help='Choose a comparator', default='gdb')
     base_arg_group.add_argument('-ba','--base-args', help='Base executable args', default="", nargs='+')
-    base_arg_group.add_argument('-bpid','--base-processid', help='Base process ID', default=None)
+    # base_arg_group.add_argument('-bpid','--base-processid', help='Base process ID', default=None)
     parser.add_argument('-bs','--base-script-path', help='Base preliminary script file path', default=None, nargs='+')
     regressed_arg_group.add_argument('-ra','--regression-args', help='Regression executable args', default="", nargs='+')
-    regressed_arg_group.add_argument('-rpid','--regression-processid', help='Regression process ID', default=None)
+    # regressed_arg_group.add_argument('-rpid','--regression-processid', help='Regression process ID', default=None)
     parser.add_argument('-rs','--regression-script-path', help='Regression preliminary script file path', default=None, nargs='+')
     parser.add_argument('-r','--remote_host', help='The host of the remote server', default='localhost')
     parser.add_argument('-p','--platform', help='The platform of the remote server: macosx, linux', default='linux')
@@ -511,10 +511,10 @@ def main() -> None:
 
     comparator = args['comparator']
     ba = ' '.join(args['base_args'])
-    bpid = args['base_processid']
+    bpid = None # args['base_processid']
     bs = ' '.join(args['base_script_path']) if args['base_script_path'] is not None else None
     ra = ' '.join(args['regression_args'])
-    rpid = args['regression_processid']
+    rpid = None # args['regression_processid']
     rs = ' '.join(args['regression_script_path']) if args["regression_script_path"] is not None else None
     base_only = False
 
