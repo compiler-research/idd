@@ -260,6 +260,16 @@ class GDBMiDebugger(Driver):
         raw_result = self.gdb_instances[version].recv()
         return self.parse_raw_command_output(raw_result)
 
+    def insert_stdin(self, text: str):
+        self.base_gdb_instance.send_input_to_debuggee(text)
+        self.regressed_gdb_instance.send_input_to_debuggee(text)
+
+    def insert_stdin_single(self, text: str, target: str):
+        if target == "base":
+            self.base_gdb_instance.send_input_to_debuggee(text)
+        if target == "regressed":
+            self.regressed_gdb_instance.send_input_to_debuggee(text)
+
     def terminate(self):
         print("Terminating GDB instances")
         self.base_gdb_instance.terminate()
