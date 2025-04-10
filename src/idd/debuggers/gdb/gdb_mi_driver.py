@@ -46,7 +46,10 @@ class GDBMiDebugger(Driver):
         base_thread = threading.Thread(target=get_result, args=(self.base_gdb_instance, base_result))
         regressed_thread = threading.Thread(target=get_result, args=(self.regressed_gdb_instance, regressed_result))
 
+        self.base_gdb_instance.flush_debuggee_output()
         self.base_gdb_instance.write(command)
+
+        self.base_gdb_instance.flush_debuggee_output()
         self.regressed_gdb_instance.write(command)
 
         base_thread.start()
@@ -115,6 +118,7 @@ class GDBMiDebugger(Driver):
         global regressed_response
 
         try:
+            self.gdb_instances[version].flush_debuggee_output()
             self.gdb_instances[version].write(command)
             raw_result = self.gdb_instances[version].read_until_prompt()
 
@@ -130,6 +134,7 @@ class GDBMiDebugger(Driver):
         global regressed_response
 
         try:
+            self.gdb_instances[version].flush_debuggee_output()
             self.gdb_instances[version].write(command)
             raw_result = self.gdb_instances[version].read_until_prompt()
         except Exception as e:
@@ -187,6 +192,8 @@ class GDBMiDebugger(Driver):
         if version is not None:
             return self.run_single_special_command("pstate", version)
 
+        self.base_gdb_instance.flush_debuggee_output()
+        self.regressed_gdb_instance.flush_debuggee_output()
         # get base and regression state
         self.base_gdb_instance.write((" {command}\n".format(command = "pstate")))
         self.regressed_gdb_instance.write((" {command}\n".format(command = "pstate")))

@@ -123,9 +123,21 @@ class IDDGdbController(GdbController):
                 logger.warning("read_until_prompt() timed out")
                 break
 
-            time.sleep(0.02)
+            time.sleep(0.09)
 
         return output
+
+
+    def flush_debuggee_output(self):
+        try:
+            while True:
+                if os.read(self.debuggee_master_fd, 4096):
+                    continue
+                break
+        except (BlockingIOError, OSError):
+            pass
+
+        self.debuggee_output_buffer = []
 
 
     def read_debuggee_output(self):
