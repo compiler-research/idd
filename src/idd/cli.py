@@ -2,6 +2,8 @@
 
 import argparse
 import sys
+import os
+from asyncio import sleep
 
 from textual import on
 from textual import events
@@ -18,7 +20,7 @@ from idd.ui.scrollable_area import TextScrollView
 
 
 class DiffDebug(App):
-    CSS_PATH = "layout.tcss"
+    CSS_PATH = os.path.join(os.path.dirname(__file__), "layout.tcss")
 
     current_index: Reactive[int] = Reactive(-1)
     tab_index = ["parallel_command_bar", "base_command_bar", "regressed_command_bar"]
@@ -41,6 +43,9 @@ class DiffDebug(App):
     diff_asm2 = TextScrollView(title="Regression Asm", component_id = "diff-asm2")
     diff_reg1 = TextScrollView(title="Base Registers", component_id = "diff-reg1")
     diff_reg2 = TextScrollView(title="Regression Registers", component_id = "diff-reg2")
+    base_input_bar = Input(placeholder="Input for base debuggee...", id="base-input-bar")
+    regressed_input_bar = Input(placeholder="Input for regression debuggee...", id="regressed-input-bar")
+
     #executable_path1 = DiffArea(title="base executable and arguments", value="")
     #executable_path2 = DiffArea(title="regression executable and arguments", value="")
 
@@ -60,6 +65,13 @@ class DiffDebug(App):
         self.base_history_index = 0
         self.regressed_history = [""]
         self.regressed_history_index = 0
+        self.base_awaiting_shown = False
+        self.regressed_awaiting_shown = False
+        
+    async def on_mount(self) -> None:
+        #self.set_interval(0.1, self.refresh_debuggee_status)
+        self.set_interval(0.25, self.watch_debuggee_output)
+
 
     async def set_command_result(self, version) -> None:
         state = Debugger.get_state(version)
@@ -215,6 +227,29 @@ class DiffDebug(App):
         diff2 = self.diff_driver.get_diff(regressed_file_contents, base_file_contents, "regressed")
         self.diff_reg2.text(diff2)
 
+    async def watch_debuggee_output(self) -> None:
+        if hasattr(Debugger, "base_gdb_instance"):
+            base_output = Debugger.base_gdb_instance.pop_debuggee_output()
+            if base_output:
+                self.diff_area1.append(base_output)
+            if Debugger.base_gdb_instance.is_waiting_for_input():
+                if not self.base_awaiting_shown:
+                    self.diff_area1.append("[awaiting input]")
+                    self.base_awaiting_shown = True
+            else:
+                self.base_awaiting_shown = False
+
+        if hasattr(Debugger, "regressed_gdb_instance"):
+            regressed_output = Debugger.regressed_gdb_instance.pop_debuggee_output()
+            if regressed_output:
+                self.diff_area2.append(regressed_output)
+            if Debugger.regressed_gdb_instance.is_waiting_for_input():
+                if not self.regressed_awaiting_shown:
+                    self.diff_area2.append("[awaiting input]")
+                    self.regressed_awaiting_shown = True
+            else:
+                self.regressed_awaiting_shown = False
+
     def compose(self) -> ComposeResult:
         """Compose the layout of the application."""
         if self.only_base:
@@ -313,11 +348,14 @@ class DiffDebug(App):
                 self.parallel_command_bar.value == "exit":
                 Debugger.terminate()
                 exit(0)
-            
+
             if self.parallel_command_bar.value.startswith("stdin "):
-                Debugger.insert_stdin(self.parallel_command_bar.value[6:] + "\n")
+                content = self.parallel_command_bar.value[6:]
+                Debugger.insert_stdin(content + "\n")
+                self.diff_area1.append([content])
+                self.diff_area2.append([content])
                 result = {}
-            
+
             elif self.parallel_command_bar.value != "":
                 result = Debugger.run_parallel_command(self.parallel_command_bar.value)
 
@@ -347,6 +385,7 @@ class DiffDebug(App):
             
             if self.base_command_bar.value.startswith("stdin "):
                 Debugger.insert_stdin_single(self.base_command_bar.value[6:] + "\n", "base")
+                self.diff_area1.append([self.base_command_bar.value[6:]])
 
             elif self.base_command_bar.value != "":
                 result = Debugger.run_single_command(self.base_command_bar.value, "base")
@@ -371,6 +410,7 @@ class DiffDebug(App):
         elif event.control.id == 'regressed-command-bar':
             if self.regressed_command_bar.value.startswith("stdin "):
                 Debugger.insert_stdin_single(self.regressed_command_bar.value[6:] + "\n", "regressed")
+                self.diff_area1.append([self.base_command_bar.value[6:]])
 
             elif self.regressed_command_bar.value != "":
                 result = Debugger.run_single_command(self.regressed_command_bar.value, "regressed")
@@ -390,6 +430,12 @@ class DiffDebug(App):
             await self.set_command_result("regressed")
     
             self.regressed_command_bar.value = ""
+
+        elif event.input.id == "base-input-bar":
+            Debugger.base_gdb_instance.send_input_to_debuggee(event.value)
+
+        elif event.input.id == "regressed-input-bar":
+            Debugger.regressed_gdb_instance.send_input_to_debuggee(event.value)
 
     async def on_key(self, event: events.Key) -> None:
         if self.focused is None:
@@ -483,7 +529,6 @@ def main() -> None:
     disable_assembly = args["disable_assembly"]
     dd = DiffDebug(disable_assembly, disable_registers, base_only)
     dd.run()
-
 
 if __name__ == "__main__":
     main()
