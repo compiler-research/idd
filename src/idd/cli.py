@@ -18,6 +18,9 @@ from idd.ui.footer import Footer
 from idd.ui.header import Header
 from idd.ui.scrollable_area import TextScrollView
 
+import os
+import time
+
 
 class DiffDebug(App):
     CSS_PATH = os.path.join(os.path.dirname(__file__), "layout.tcss")
@@ -30,6 +33,19 @@ class DiffDebug(App):
     diff_driver = DiffDriver()
     base_args = ""
     regression_args = ""
+
+    # Terminal-specific selection tips
+    # VSCode : Paste this in user settings: "terminal.integrated.macOptionClickForcesSelection": true
+    SELECTION_TIPS = {
+        "Terminal.app": "Option(⌥)+Click to select text OR Cmd(⌘)+R and select",
+        "iTerm2": "Cmd(⌘)+Shift+C: Copy mode | Option(⌥)+Click: Selection",
+        "Warp": "Shift+Click to select text",
+        "vscode": "Option(⌥)+Click",
+        "default": "Use terminal's selection mechanism to copy text (Maybe Shift+Click)"
+    }
+
+    # Track if we've shown the tip for this panel
+    tip_shown = False
 
     diff_area1 = TextScrollView(title="Base Diff", component_id="diff-area1")
     diff_area2 = TextScrollView(title="Regression Diff", component_id = "diff-area2")
@@ -65,13 +81,16 @@ class DiffDebug(App):
         self.base_history_index = 0
         self.regressed_history = [""]
         self.regressed_history_index = 0
+        self._hover_start = 0
+        self._clicked = False
+        terminal = self._get_terminal_type()
+        self.tip = self.SELECTION_TIPS.get(terminal, self.SELECTION_TIPS["default"])
         self.base_awaiting_shown = False
         self.regressed_awaiting_shown = False
         
     async def on_mount(self) -> None:
         #self.set_interval(0.1, self.refresh_debuggee_status)
         self.set_interval(0.25, self.watch_debuggee_output)
-
 
     async def set_command_result(self, version) -> None:
         state = Debugger.get_state(version)
@@ -485,6 +504,48 @@ class DiffDebug(App):
                 return
             
             self.regressed_command_bar.value = self.regressed_history[self.regressed_history_index]
+
+
+    def _get_terminal_type(self):
+        """Try to detect terminal type from environment variables."""
+        term_program = os.environ.get("TERM_PROGRAM", "")
+        if "iTerm" in term_program:
+            return "iTerm2"
+        elif "Apple_Terminal" in term_program:
+            return "Terminal.app"
+        elif "WarpTerminal" in term_program:
+            return "Warp"
+        elif "vscode" in term_program:
+            return "vscode"
+        return "default"
+    
+    def on_mouse_down(self, event: events.MouseDown) -> None:
+        """Track when the user clicks on the panel."""
+        self._clicked = True
+        self._hover_start = time.time()  # Start timing from the click
+    
+    def on_mouse_move(self, event: events.MouseMove) -> None:
+        """Show selection tip after clicking and hovering."""
+        # Only show tip if we've been clicked and haven't shown a tip yet
+        if self._clicked and not self.tip_shown:
+            current_time = time.time()
+            hover_duration = current_time - self._hover_start
+            
+            # Show tip after 0.1 seconds of hovering after a click
+            if hover_duration > 0.1:
+                self.notify(self.tip, severity="information", timeout=3)
+                self.tip_shown = True 
+    
+    def on_mouse_up(self, event: events.MouseUp) -> None:
+        """Reset click state when mouse button is released."""
+        self._clicked = False
+        self.tip_shown = False
+
+    
+    def on_leave(self, event: events.Leave) -> None:
+        """Reset hover timer and click state when mouse leaves the widget."""
+        self._hover_start = 0
+        self._clicked = False
 
 
 Debugger = None
