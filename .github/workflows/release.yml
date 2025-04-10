@@ -1,9 +1,9 @@
 name: PyPI Upload
 
 on:
-  release:
-    types:
-      - published
+  push:
+    tags:
+      - 'v*.*.*'
 
 jobs:
   dist:
