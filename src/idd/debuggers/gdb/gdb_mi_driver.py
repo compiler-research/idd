@@ -31,6 +31,7 @@ class GDBMiDebugger(Driver):
 
         dirname = os.path.dirname(__file__)
         self.run_parallel_command("source " + os.path.join(dirname, "gdb_commands.py"))
+        self.run_parallel_command("set debuginfod enabled off")
 
     def run_parallel_command(self, command):
         base_result = []
