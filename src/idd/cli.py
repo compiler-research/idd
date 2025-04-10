@@ -76,7 +76,8 @@ class DiffDebug(App):
     async def set_command_result(self, version) -> None:
         state = Debugger.get_state(version)
 
-        await self.set_debugee_console_output(version)
+        if comparator == "lldb":
+            await self.set_debugee_console_output(version)
         await self.set_pframes_result(state, version)
         await self.set_pargs_result(state, version)
         await self.set_plocals_result(state, version)
@@ -97,7 +98,8 @@ class DiffDebug(App):
             await self.set_pframes_command_result(state)
             await self.set_pargs_command_result(state)
             await self.set_plocals_command_result(state)
-            await self.set_debugee_console_output()
+            if comparator == "lldb":
+                await self.set_debugee_console_output()
             if not self.disable_asm:
                 await self.set_pasm_command_result(state)
             if not self.disable_registers:
@@ -486,8 +488,9 @@ class DiffDebug(App):
 
 
 Debugger = None
+comparator = None
 def main() -> None:
-    global Debugger
+    global Debugger, comparator
 
     parser = argparse.ArgumentParser(description='Diff Debug for simple debugging!')
 
