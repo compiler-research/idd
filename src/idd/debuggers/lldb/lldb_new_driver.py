@@ -1,6 +1,6 @@
 from idd.driver import Driver
 from idd.debuggers.lldb.lldb_controller import IDDLLDBController
-from idd.debuggers.lldb.lldb_extensions import *
+from idd.debuggers.lldb.lldb_extensions import get_current_stack_frame_from_target,get_args_as_list,get_local_vars_as_list,get_instructions_as_list,get_registers_as_list
 from concurrent.futures import ThreadPoolExecutor
 
 
