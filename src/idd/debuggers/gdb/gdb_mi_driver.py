@@ -1,6 +1,7 @@
 import os
 import json
-import logging, threading
+import logging
+import threading
 
 from pygdbmi import gdbmiparser
 
@@ -122,7 +123,7 @@ class GDBMiDebugger(Driver):
             self.gdb_instances[version].write(command)
             raw_result = self.gdb_instances[version].read_until_prompt()
 
-        except Exception as e:
+        except Exception:
             logger.exception(f"Error executing GDB command: {command}")
             # self.handle_gdb_crash()
             return []
@@ -137,7 +138,7 @@ class GDBMiDebugger(Driver):
             #self.gdb_instances[version].flush_debuggee_output()
             self.gdb_instances[version].write(command)
             raw_result = self.gdb_instances[version].read_until_prompt()
-        except Exception as e:
+        except Exception:
             logger.exception(f"Error executing GDB command: {command}")
             # self.handle_gdb_crash()
             return []

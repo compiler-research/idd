@@ -3,7 +3,6 @@
 import argparse
 import sys
 import os
-from asyncio import sleep
 
 from textual import on
 from textual import events
@@ -531,7 +530,7 @@ def main() -> None:
             Debugger = GDBMiDebugger(ba, bs, ra, rs, base_pid=bpid, regression_pid=rpid)
 
     elif comparator == 'lldb':
-        from idd.debuggers.lldb.lldb_driver import LLDBParallelDebugger, LLDBDebugger
+        from idd.debuggers.lldb.lldb_driver import LLDBDebugger
         from idd.debuggers.lldb.lldb_new_driver import LLDBNewDriver
 
         if ra == "" and rpid is None:

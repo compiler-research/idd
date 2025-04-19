@@ -64,13 +64,13 @@ class PrintState (gdb.Command):
             # get locals
             if (symbol.is_variable):
                 name = symbol.name
-                if not name in names:
+                if name not in names:
                     locals.append('{} = {}'.format(name, symbol.value(frame)).replace('"',''))
 
             # get args
             if (symbol.is_argument):
                 name = symbol.name
-                if not name in names:
+                if name not in names:
                     args.append('{} = {}\n'.format(name, symbol.value(frame)).replace('"',''))
         block = block.superblock
 
@@ -136,7 +136,7 @@ class PrintLocals (gdb.Command):
         for symbol in block:
             if (symbol.is_variable):
                 name = symbol.name
-                if not name in names:
+                if name not in names:
                     print('{} = {}'.format(name, symbol.value(frame)))
                     names.add(name)
         block = block.superblock
@@ -153,7 +153,7 @@ class PrintArgs (gdb.Command):
         for symbol in block:
             if (symbol.is_argument):
                 name = symbol.name
-                if not name in names:
+                if name not in names:
                     print('{} = {}\n'.format(name, symbol.value(frame)))
                     names.add(name)
         block = block.superblock
@@ -216,7 +216,7 @@ class RunWrapper (gdb.Command):
     try:
       result = gdb.execute(arg, to_string=True)
       print(result)
-    except Exception as ex:
+    except Exception:
       ex_type, ex_value, ex_traceback = sys.exc_info()
       # Extract unformatter stack traces as tuples
       trace_back = traceback.extract_tb(ex_traceback)

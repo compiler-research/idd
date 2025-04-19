@@ -1,15 +1,10 @@
-from pygdbmi.gdbcontroller import GdbController
-from pprint import pprint
 from idd.driver import Driver
 
-import io
-import time
 import subprocess
 import selectors
-import sys
-import os, fcntl
-import select, time
-import threading, queue
+import os
+import fcntl
+import threading
 
 base_response = ""
 regressed_response = ""

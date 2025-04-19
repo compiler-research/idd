@@ -1,9 +1,4 @@
 import lldb
-import sys
-import os
-import time
-from six import StringIO as SixStringIO
-import six
 import lldb_utils
 import json
 
