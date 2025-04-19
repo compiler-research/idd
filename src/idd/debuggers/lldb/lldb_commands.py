@@ -1,9 +1,4 @@
 import lldb
-import sys
-import os
-import time
-from six import StringIO as SixStringIO
-import six
 import lldb_utils
 import json
 
@@ -70,8 +65,8 @@ def print_list(debugger, args, result, internal_dict):
 
         print(result)
         print("end_command")
-    except:
-        print("exception")
+    except Exception:
+        print("exception {e}")
         print("end_command")
 
 def run_wrapper(debugger, args, result, internal_dict):
@@ -83,8 +78,8 @@ def run_wrapper(debugger, args, result, internal_dict):
 
         print(command_result)
         print("end_command")
-    except:
-        print("exception")
+    except Exception:
+        print("exception {e}")
         print("end_command")
 
 def __lldb_init_module(debugger, internal_dict):

@@ -1,14 +1,11 @@
 import os
 import logging
-import select
 import fcntl
 import pty
 import signal
 import threading
 import time
 
-from idd.driver import IDDParallelTerminate
-from idd.debuggers.gdb.utils import parse_gdb_line
 
 from pygdbmi.gdbcontroller import GdbController
 

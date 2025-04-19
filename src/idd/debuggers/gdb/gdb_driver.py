@@ -1,15 +1,10 @@
-from pygdbmi.gdbcontroller import GdbController
-from pprint import pprint
 from idd.driver import Driver
 
-import io
-import time
 import subprocess
 import selectors
-import sys
-import os, fcntl
-import select, time
-import threading, queue
+import os
+import fcntl
+import threading
 
 base_response = ""
 regressed_response = ""
@@ -266,14 +261,14 @@ class GDBDebugger(Driver):
 
         if version == "base":
             while True:
-                if base_response != None:
+                if base_response is not None:
                     temp = base_response
                     base_response = ""
                     break
 
         if version == "regressed":
             while True:
-                if regressed_response != None:
+                if regressed_response is not None:
                     temp = regressed_response
                     regressed_response = ""
                     break

@@ -1,4 +1,6 @@
-import os, sys, pty, tty, select, threading
+import os
+import select
+import threading
 import platform
 import lldb
 from lldb import eLaunchFlagStopAtEntry
