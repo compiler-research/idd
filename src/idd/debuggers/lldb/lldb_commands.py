@@ -65,7 +65,7 @@ def print_list(debugger, args, result, internal_dict):
 
         print(result)
         print("end_command")
-    except Exception as e:
+    except Exception:
         print("exception {e}")
         print("end_command")
 
@@ -78,7 +78,7 @@ def run_wrapper(debugger, args, result, internal_dict):
 
         print(command_result)
         print("end_command")
-    except Exception as e:
+    except Exception:
         print("exception {e}")
         print("end_command")
 
