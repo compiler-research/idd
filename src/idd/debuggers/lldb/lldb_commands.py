@@ -65,8 +65,8 @@ def print_list(debugger, args, result, internal_dict):
 
         print(result)
         print("end_command")
-    except:
-        print("exception")
+    except Exception as e:
+        print("exception {e}")
         print("end_command")
 
 def run_wrapper(debugger, args, result, internal_dict):
@@ -78,8 +78,8 @@ def run_wrapper(debugger, args, result, internal_dict):
 
         print(command_result)
         print("end_command")
-    except:
-        print("exception")
+    except Exception as e:
+        print("exception {e}")
         print("end_command")
 
 def __lldb_init_module(debugger, internal_dict):
