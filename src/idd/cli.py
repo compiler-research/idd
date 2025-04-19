@@ -126,7 +126,7 @@ class DiffDebug(App):
             self.diff_area2.append(diff2)
     
     async def set_pframes_result(self, state, version) -> None:
-        if state == None or "stack_frames" not in state:
+        if state is None or "stack_frames" not in state:
             return
 
         file_contents = state["stack_frames"]
@@ -136,7 +136,7 @@ class DiffDebug(App):
             self.diff_frames2.text(file_contents)
 
     async def set_pframes_command_result(self, state) -> None:
-        if state["base"] == None or "stack_frames" not in state["base"] or state["regressed"] == None or "stack_frames" not in state["regressed"]:
+        if state["base"] is None or "stack_frames" not in state["base"] or state["regressed"] is None or "stack_frames" not in state["regressed"]:
             return
 
         base_file_contents = state["base"]["stack_frames"]
@@ -149,7 +149,7 @@ class DiffDebug(App):
         self.diff_frames2.text(diff2)
 
     async def set_plocals_result(self, state, version) -> None:
-        if state == None or "locals" not in state:
+        if state is None or "locals" not in state:
             return
         
         file_contents = state["locals"]
@@ -160,7 +160,7 @@ class DiffDebug(App):
 
 
     async def set_plocals_command_result(self, state) -> None:
-        if state["base"] == None or "locals" not in state["base"] or state["regressed"] == None or "locals" not in state["regressed"]:
+        if state["base"] is None or "locals" not in state["base"] or state["regressed"] is None or "locals" not in state["regressed"]:
             return
 
         base_file_contents = state["base"]["locals"]
@@ -173,7 +173,7 @@ class DiffDebug(App):
         self.diff_locals2.text(diff2)
 
     async def set_pargs_result(self, state, version) -> None:
-        if state == None or "args" not in state:
+        if state is None or "args" not in state:
             return
         
         file_contents = state["args"]
@@ -183,7 +183,7 @@ class DiffDebug(App):
             self.diff_args2.text(file_contents)
 
     async def set_pargs_command_result(self, state) -> None:
-        if state["base"] == None or "args" not in state["base"] or state["regressed"] == None or "args" not in state["regressed"]:
+        if state["base"] is None or "args" not in state["base"] or state["regressed"] is None or "args" not in state["regressed"]:
             return
 
         base_file_contents = state["base"]["args"]
@@ -196,7 +196,7 @@ class DiffDebug(App):
         self.diff_args2.text(diff2)
 
     async def set_pasm_result(self, state, version) -> None:
-        if state == None or "instructions" not in state:
+        if state is None or "instructions" not in state:
             return
         
         file_contents = state["instructions"]
@@ -206,7 +206,7 @@ class DiffDebug(App):
             self.diff_asm2.text(file_contents)
 
     async def set_pasm_command_result(self, state) -> None:
-        if state["base"] == None or "instructions" not in state["base"] or state["regressed"] == None or "instructions" not in state["regressed"]:
+        if state["base"] is None or "instructions" not in state["base"] or state["regressed"] is None or "instructions" not in state["regressed"]:
             return
 
         base_file_contents = state["base"]["instructions"]
@@ -219,7 +219,7 @@ class DiffDebug(App):
         self.diff_asm2.text(diff2)
 
     async def set_pregisters_result(self, state, version) -> None:
-        if state == None or "registers" not in state:
+        if state is None or "registers" not in state:
             return
         
         file_contents = state["registers"]
@@ -229,7 +229,7 @@ class DiffDebug(App):
             self.diff_reg2.text(file_contents)
 
     async def set_pregisters_command_result(self, state) -> None:
-        if state["base"] == None or "registers" not in state["base"] or state["regressed"] == None or "registers" not in state["regressed"]:
+        if state["base"] is None or "registers" not in state["base"] or state["regressed"] is None or "registers" not in state["regressed"]:
             return
 
         base_file_contents = state["base"]["registers"]

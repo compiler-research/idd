@@ -261,14 +261,14 @@ class GDBDebugger(Driver):
 
         if version == "base":
             while True:
-                if base_response != None:
+                if base_response is not None:
                     temp = base_response
                     base_response = ""
                     break
 
         if version == "regressed":
             while True:
-                if regressed_response != None:
+                if regressed_response is not None:
                     temp = regressed_response
                     regressed_response = ""
                     break
